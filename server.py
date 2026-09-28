@@ -48,9 +48,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger('streamgrab')
 
-# Force unbuffered output
-sys.stdout.reconfigure(line_buffering=True)
-sys.stderr.reconfigure(line_buffering=True)
+# Force unbuffered output (safely ignored in serverless/Lambda environments where stdout is LambdaLogger)
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(line_buffering=True)
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    pass
 
 # ---------------------------------------------------------------------------
 # Configuration from Environment
@@ -61,7 +66,11 @@ STATIC_DIR = os.path.abspath(os.path.join(BASE_DIR, 'static'))
 TEMP_CACHE_DIR = os.path.join(tempfile.gettempdir(), 'streamgrab_media_cache')
 DOWNLOADS_DIR = os.environ.get('STREAMGRAB_STORAGE_DIR', TEMP_CACHE_DIR)
 COOKIE_FILE = os.path.join(BASE_DIR, 'cookies.txt')
-os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+try:
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+except OSError:
+    DOWNLOADS_DIR = os.path.join('/tmp', 'streamgrab_media_cache')
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 # Production configuration
 SECRET_KEY = os.environ.get('STREAMGRAB_SECRET_KEY', secrets.token_hex(32))
