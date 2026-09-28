@@ -143,10 +143,11 @@ jobs_lock = threading.Lock()
 def add_security_headers(response):
     """Apply comprehensive security headers to every HTTP response."""
     try:
-        # Cache control - prevent stale content
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+        # Cache control - prevent stale content for dynamic routes, but preserve caching on static/proxy assets
+        if not request.path.startswith('/api/thumb/'):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
 
         # Clickjacking protection
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -441,7 +442,7 @@ def cleanup_temp_cache(max_age_seconds=None):
 # yt-dlp Download Engine
 # ---------------------------------------------------------------------------
 def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postprocessor_hook, ignore_cookies: bool = False):
-    """Build secure yt-dlp download options with robust client fallbacks."""
+    """Build secure yt-dlp download options with robust Innertube client fallbacks."""
     dl_opts = {
         'outtmpl': os.path.join(DOWNLOADS_DIR, '%(title).100B.%(ext)s'),
         'progress_hooks': [progress_hook],
@@ -449,16 +450,21 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
-        'socket_timeout': 25,
-        'retries': 3,
-        'fragment_retries': 3,
+        'socket_timeout': 30,
+        'retries': 5,
+        'fragment_retries': 5,
         'geo_bypass': False,
         'extractor_args': {
             'youtube': {
-                'player_client': ['web_embedded', 'mweb', 'default'],
+                'player_client': ['visionos', 'web_embedded', 'tv_simply', 'mweb'],
             }
         }
     }
+
+    # Optional proxy support for cloud/datacenter environments (e.g. Render, Railway, AWS)
+    proxy_url = os.environ.get('STREAMGRAB_PROXY') or os.environ.get('HTTP_PROXY') or os.environ.get('HTTPS_PROXY')
+    if proxy_url:
+        dl_opts['proxy'] = proxy_url
 
     if not ignore_cookies:
         cookie_path = get_active_cookie_file()
@@ -569,20 +575,20 @@ def process_download(job_id: str):
             with yt_dlp.YoutubeDL(dl_opts) as ydl:
                 res_info = ydl.extract_info(clean_url, download=True)
         except Exception as first_attempt_err:
-            logger.warning("First attempt on %s failed: %s. Retrying with clean embedded clients...", clean_url, first_attempt_err)
+            logger.warning("First attempt on %s failed: %s. Retrying with clean unauthenticated visionos & web_embedded...", clean_url, first_attempt_err)
             try:
-                # Tier 2: Ignore cookies, use web_embedded and tv_embedded
+                # Tier 2: Ignore cookies, force clean visionos & web_embedded
                 retry_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
-                retry_opts['extractor_args']['youtube']['player_client'] = ['web_embedded', 'tv_embedded', 'mweb', 'default']
+                retry_opts['extractor_args']['youtube']['player_client'] = ['visionos', 'web_embedded', 'tv_simply', 'mweb']
                 with yt_dlp.YoutubeDL(retry_opts) as ydl:
                     res_info = ydl.extract_info(clean_url, download=True)
             except Exception as second_attempt_err:
-                logger.warning("Second attempt on %s failed: %s. Retrying with broad formats...", clean_url, second_attempt_err)
+                logger.warning("Second attempt on %s failed: %s. Retrying with visionos direct stream...", clean_url, second_attempt_err)
                 try:
-                    # Tier 3: Universal format fallback
+                    # Tier 3: Direct visionos format fallback
                     final_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
                     final_opts['format'] = 'bestaudio/best' if media_type == 'audio' else 'bestvideo+bestaudio/best'
-                    final_opts['extractor_args']['youtube']['player_client'] = ['mweb', 'android', 'web_embedded', 'default']
+                    final_opts['extractor_args']['youtube']['player_client'] = ['visionos']
                     with yt_dlp.YoutubeDL(final_opts) as ydl:
                         res_info = ydl.extract_info(clean_url, download=True)
                 except Exception as final_err:
@@ -690,7 +696,7 @@ def health():
 
 
 @app.route('/api/thumb/<video_id>', methods=['GET'])
-@limiter.limit("120 per minute")
+@limiter.exempt
 def get_thumbnail_proxy(video_id):
     """Proxy YouTube thumbnail from backend to bypass client-side adblockers and CORS."""
     if not video_id or not re.match(r'^[a-zA-Z0-9_-]{11}$', video_id):
@@ -723,25 +729,28 @@ def get_thumbnail_proxy(video_id):
 
 
 @app.route('/api/debug/extract', methods=['GET'])
-@limiter.limit("30 per minute")
+@limiter.limit("60 per minute")
 def debug_extract():
     """Diagnostic endpoint to test extraction with various player clients."""
     url = request.args.get('url', 'https://www.youtube.com/watch?v=1YnkZS9e8MA')
     target = clean_youtube_url(url)
     results = {}
     configs = {
-        'default_opts': build_yt_dlp_options('audio', '192', lambda d: None, lambda d: None),
-        'no_cookies_web_embedded': {
+        'visionos': {
             'quiet': True,
-            'extractor_args': {'youtube': {'player_client': ['web_embedded', 'mweb', 'default']}}
+            'extractor_args': {'youtube': {'player_client': ['visionos']}}
         },
-        'tv_embedded': {
+        'visionos_and_web_embedded': {
             'quiet': True,
-            'extractor_args': {'youtube': {'player_client': ['tv_embedded', 'default']}}
+            'extractor_args': {'youtube': {'player_client': ['visionos', 'web_embedded']}}
         },
-        'android': {
+        'web_embedded': {
             'quiet': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'default']}}
+            'extractor_args': {'youtube': {'player_client': ['web_embedded']}}
+        },
+        'tv_simply': {
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['tv_simply']}}
         },
     }
     for name, opts in configs.items():
@@ -763,7 +772,7 @@ def debug_extract():
 
 
 @app.route('/api/search', methods=['GET'])
-@limiter.limit("15 per minute")
+@limiter.limit("60 per minute")
 def search_youtube():
     """YouTube search endpoint with rate limiting and input validation."""
     raw_query = request.args.get('q', '')
@@ -842,7 +851,7 @@ def download():
     if len(raw_urls) > 100:
         return jsonify({"success": False, "error": "Too many URL entries."}), 400
 
-    media_type = str(data.get('type', 'audio')).strip().lower()
+    media_type = str(data.get('type') or data.get('media_type') or 'audio').strip().lower()
     if media_type not in ('audio', 'video'):
         media_type = 'audio'
 

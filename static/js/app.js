@@ -879,6 +879,11 @@
     if (deckVideoTitleBar) deckVideoTitleBar.textContent = video.title || 'StreamGrab Player';
     if (deckVideoChannel) deckVideoChannel.textContent = video.uploader || 'YouTube';
     if (deckVideoViews) deckVideoViews.textContent = video.views_str || '';
+    if (sheetVideoThumb) {
+      const vid = video.id || extractVideoId(video.url || '');
+      const safeThumb = video.thumbnail || (vid ? `/api/thumb/${vid}` : '');
+      if (safeThumb) sheetVideoThumb.src = safeThumb;
+    }
 
     // Initialize custom deck timeline matching our music/video player UX
     deckTotalSeconds = video.duration || 0;
@@ -1400,7 +1405,7 @@
         id: videoId,
         url: `https://www.youtube.com/watch?v=${videoId}`,
         title: `YouTube Video (${videoId})`,
-        thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        thumbnail: `/api/thumb/${videoId}`,
         duration_str: 'Ready',
         uploader: 'YouTube',
         views_str: ''
@@ -1488,8 +1493,8 @@
       const safeThumb = item.thumbnail || proxyThumb || directThumb;
 
       card.innerHTML = `
-        <div class="sg-thumb-wrap" title="Tap to Play Online" style="position:relative;background:#1e293b;overflow:hidden;">
-          <img class="sg-thumb-img" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
+        <div class="sg-thumb-wrap" title="Tap to Play Online" style="aspect-ratio:16/9;width:100%;min-height:120px;position:relative;background:#1e293b;overflow:hidden;display:block;">
+          <img class="sg-thumb-img" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
           <div class="sg-thumb-fallback" style="display:none;width:100%;height:100%;position:absolute;top:0;left:0;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           </div>
@@ -2101,6 +2106,7 @@
     card.dataset.filename = job.filename;
     card.dataset.title = job.title || job.filename;
     card.dataset.isVideo = isVideo ? '1' : '0';
+    card.dataset.thumbnail = safeThumb || '';
 
     card.querySelector('.btn-play-completed').addEventListener('click', () => {
       const allCompletedCards = Array.from(completedDownloadsList.querySelectorAll('.sg-completed-card'));
@@ -2113,7 +2119,7 @@
           media_type: isVid ? 'video' : 'audio',
           url: `/api/file/${encodeURIComponent(fname)}?stream=1`,
           filename: fname,
-          thumbnail: '',
+          thumbnail: c.dataset.thumbnail || '',
           isOffline: false
         };
       });

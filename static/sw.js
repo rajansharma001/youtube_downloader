@@ -1,10 +1,10 @@
 /**
- * StreamGrab Service Worker (v8)
+ * StreamGrab Service Worker (v10)
  * Network-first strategy: guarantees user always gets fresh HTML, styles, and scripts.
  * Falls back to offline cache only when disconnected.
  */
 
-const CACHE_NAME = 'streamgrab-cache-v8';
+const CACHE_NAME = 'streamgrab-cache-v10';
 const PRECACHE_URLS = [
   '/',
   '/static/css/style.css',
