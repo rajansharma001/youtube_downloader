@@ -1,0 +1,15 @@
+# StreamGrab Render.com Blueprint Specification
+# Deploys as a persistent Docker Web Service with FFmpeg and Python preconfigured
+services:
+  - type: web
+    name: streamgrab
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: STREAMGRAB_ENV
+        value: production
+      - key: STREAMGRAB_HOST
+        value: 0.0.0.0

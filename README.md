@@ -128,6 +128,17 @@ The container automatically bundles FFmpeg and Deno with hardened non-root user 
 
 ---
 
+## ☁️ Render.com 1-Click Cloud Deployment
+
+StreamGrab is preconfigured with a native [`render.yaml`](file:///e:/community%20project/youtube_downloader/render.yaml) blueprint for **Render.com**. Unlike serverless hosts (such as Vercel), Render runs as a persistent service with unlimited execution time, background download queues, and full FFmpeg transcode support:
+
+1. Log into your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** &rarr; Select **Blueprint**.
+3. Connect your GitHub repository (`https://github.com/rajansharma001/youtube_downloader`).
+4. Render automatically configures the Docker Web Service and provisions your live application with a public HTTPS URL.
+
+---
+
 ## 📡 API Reference
 
 | Endpoint | Method | Description |

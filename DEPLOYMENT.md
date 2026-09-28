@@ -48,6 +48,25 @@ curl http://localhost:5000/api/health
 
 ---
 
+## Render.com Cloud Deployment (Recommended)
+
+Render is significantly better suited for StreamGrab than serverless platforms (like Vercel) because Render runs **persistent web services and containers** without arbitrary 10-second request timeouts, allowing long background video downloads and FFmpeg audio transcode jobs to complete uninterrupted.
+
+### Option A: 1-Click Blueprint (Easiest)
+1. Push this repository to your GitHub account (`https://github.com/rajansharma001/youtube_downloader`).
+2. Log into [Render Dashboard](https://dashboard.render.com/).
+3. Click **New +** &rarr; Select **Blueprint**.
+4. Connect the `youtube_downloader` repository. Render will automatically detect [`render.yaml`](file:///e:/community%20project/youtube_downloader/render.yaml) and configure the Docker Web Service.
+5. Click **Apply**.
+
+### Option B: Manual Web Service
+1. In the [Render Dashboard](https://dashboard.render.com/), click **New +** &rarr; **Web Service**.
+2. Connect your GitHub repository.
+3. Select **Docker** as the Runtime environment.
+4. Set the Health Check Path to: `/api/health`.
+5. Select the **Free** instance type (or Starter for higher CPU).
+6. Click **Create Web Service**. Render builds the `Dockerfile`, installs FFmpeg, and exposes your live application at `https://your-service.onrender.com`.
+
 ## Online VPS Deployment (Ubuntu / Debian + Nginx + Certbot HTTPS)
 
 ### Step 1: Install System Packages

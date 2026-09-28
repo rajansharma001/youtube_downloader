@@ -86,7 +86,7 @@ MAX_JOBS_IN_MEMORY = 500
 # Determine environment
 IS_PRODUCTION = os.environ.get('STREAMGRAB_ENV', 'production').lower() == 'production'
 BIND_HOST = os.environ.get('STREAMGRAB_HOST', '0.0.0.0')
-BIND_PORT = int(os.environ.get('STREAMGRAB_PORT', '5000'))
+BIND_PORT = int(os.environ.get('PORT', os.environ.get('STREAMGRAB_PORT', '5000')))
 
 # Check external tool availability
 FFMPEG_AVAILABLE = shutil.which('ffmpeg') is not None
