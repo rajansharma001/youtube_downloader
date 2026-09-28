@@ -349,8 +349,8 @@ def format_views(view_count) -> str:
 def format_user_error(raw_error: str) -> str:
     """Transform technical errors into safe, user-friendly messages."""
     lower = raw_error.lower()
-    if "sign in to confirm you're not a bot" in lower or "bot" in lower:
-        return "YouTube bot check triggered. Please upload a cookies.txt file to authenticate."
+    if "sign in to confirm you're not a bot" in lower or "confirm you're not a bot" in lower:
+        return "YouTube bot check triggered. Please try again or upload a valid cookies.txt file."
     if "confirm your age" in lower or "age-restricted" in lower:
         return "This video is age-restricted and requires account authentication."
     if "private video" in lower:
@@ -371,25 +371,39 @@ def format_user_error(raw_error: str) -> str:
     return raw_error
 
 
+def is_valid_authenticated_cookie_file(filepath: str) -> bool:
+    """Check if cookie file actually contains authenticated session tokens."""
+    if not filepath or not os.path.exists(filepath) or os.path.getsize(filepath) < 50:
+        return False
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+            # Must contain actual logged-in user session cookies
+            auth_markers = ['LOGIN_INFO', 'SAPISID', '__Secure-1PSID', '__Secure-3PSID', 'SID', 'SSID', 'HSID']
+            return any(marker in content for marker in auth_markers)
+    except Exception:
+        return False
+
+
 def get_active_cookie_file() -> str | None:
-    """Find a valid cookies.txt file in known locations."""
+    """Find a valid authenticated cookies.txt file in known locations."""
     candidate_names = ['cookies.txt', 'youtube_cookies.txt', 'youtube.com_cookies.txt']
 
     for name in candidate_names:
         p = os.path.join(BASE_DIR, name)
-        if os.path.exists(p) and os.path.getsize(p) > 20:
+        if is_valid_authenticated_cookie_file(p):
             return p
 
     for name in candidate_names:
         p = os.path.join(DOWNLOADS_DIR, name)
-        if os.path.exists(p) and os.path.getsize(p) > 20:
+        if is_valid_authenticated_cookie_file(p):
             return p
 
     user_downloads = os.path.join(os.path.expanduser('~'), 'Downloads')
     if os.path.exists(user_downloads):
         for name in candidate_names:
             p = os.path.join(user_downloads, name)
-            if os.path.exists(p) and os.path.getsize(p) > 20:
+            if is_valid_authenticated_cookie_file(p):
                 return p
 
     return None
@@ -418,8 +432,8 @@ def cleanup_temp_cache(max_age_seconds=None):
 # ---------------------------------------------------------------------------
 # yt-dlp Download Engine
 # ---------------------------------------------------------------------------
-def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postprocessor_hook):
-    """Build secure yt-dlp download options."""
+def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postprocessor_hook, ignore_cookies: bool = False):
+    """Build secure yt-dlp download options with robust client fallbacks."""
     dl_opts = {
         'outtmpl': os.path.join(DOWNLOADS_DIR, '%(title).100B.%(ext)s'),
         'progress_hooks': [progress_hook],
@@ -430,20 +444,20 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
         'socket_timeout': 25,
         'retries': 3,
         'fragment_retries': 3,
-        # Security: restrict network to only YouTube domains
         'geo_bypass': False,
-    }
-
-    cookie_path = get_active_cookie_file()
-    if cookie_path:
-        dl_opts['cookiefile'] = cookie_path
-        logger.info("Using authenticated cookies from: %s", cookie_path)
-    else:
-        dl_opts['extractor_args'] = {
+        'extractor_args': {
             'youtube': {
-                'player_client': ['mweb', 'web_safari', 'android', 'ios', 'default'],
+                'player_client': ['tv', 'web_embedded', 'mweb', 'default'],
+                'player_skip': ['configs', 'webpage'],
             }
         }
+    }
+
+    if not ignore_cookies:
+        cookie_path = get_active_cookie_file()
+        if cookie_path:
+            dl_opts['cookiefile'] = cookie_path
+            logger.info("Using authenticated cookies from: %s", cookie_path)
 
     if media_type == 'video':
         quality_map = {
@@ -543,40 +557,60 @@ def process_download(job_id: str):
 
     try:
         dl_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook)
-        with yt_dlp.YoutubeDL(dl_opts) as ydl:
-            res_info = ydl.extract_info(clean_url, download=True)
-            if not res_info:
-                raise ValueError("Could not extract video metadata.")
+        res_info = None
+        try:
+            with yt_dlp.YoutubeDL(dl_opts) as ydl:
+                res_info = ydl.extract_info(clean_url, download=True)
+        except Exception as first_attempt_err:
+            err_text = str(first_attempt_err).lower()
+            if any(k in err_text for k in ['bot', 'sign in', 'po token', '403', 'unavailable']):
+                logger.warning("First attempt on %s failed (%s). Retrying with TV/embedded fallback...", clean_url, first_attempt_err)
+                retry_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
+                retry_opts['extractor_args']['youtube']['player_client'] = ['tv', 'web_embedded', 'mweb', 'default']
+                with yt_dlp.YoutubeDL(retry_opts) as ydl:
+                    res_info = ydl.extract_info(clean_url, download=True)
+            else:
+                raise first_attempt_err
 
-            actual_title = res_info.get('title') or job['title'] or 'YouTube Media'
+        if not res_info:
+            raise ValueError("Could not extract video metadata.")
 
-            final_filename = None
-            if res_info.get('requested_downloads'):
-                for req in res_info['requested_downloads']:
-                    fp = req.get('filepath')
-                    if fp and fp.endswith(target_ext) and os.path.exists(fp):
-                        final_filename = os.path.basename(fp)
-                        break
+        actual_title = res_info.get('title') or job['title'] or 'YouTube Media'
+        thumb_url = res_info.get('thumbnail')
+        if not thumb_url:
+            m = YOUTUBE_URL_REGEX.search(clean_url)
+            if m:
+                thumb_url = f"https://i.ytimg.com/vi/{m.group(1)}/hqdefault.jpg"
 
-            if not final_filename:
-                media_exts = {target_ext}
-                files = [
-                    os.path.join(DOWNLOADS_DIR, f)
-                    for f in os.listdir(DOWNLOADS_DIR)
-                    if os.path.splitext(f)[1].lower() in media_exts
-                ]
-                if files:
-                    newest = max(files, key=os.path.getmtime)
-                    if time.time() - os.path.getmtime(newest) < 120:
-                        final_filename = os.path.basename(newest)
+        final_filename = None
+        if res_info.get('requested_downloads'):
+            for req in res_info['requested_downloads']:
+                fp = req.get('filepath')
+                if fp and fp.endswith(target_ext) and os.path.exists(fp):
+                    final_filename = os.path.basename(fp)
+                    break
 
-            if not final_filename:
-                raise RuntimeError(f"Converted {target_ext.upper()} file was not found.")
+        if not final_filename:
+            media_exts = {target_ext}
+            files = [
+                os.path.join(DOWNLOADS_DIR, f)
+                for f in os.listdir(DOWNLOADS_DIR)
+                if os.path.splitext(f)[1].lower() in media_exts
+            ]
+            if files:
+                newest = max(files, key=os.path.getmtime)
+                if time.time() - os.path.getmtime(newest) < 120:
+                    final_filename = os.path.basename(newest)
+
+        if not final_filename:
+            raise RuntimeError(f"Converted {target_ext.upper()} file was not found.")
 
         with jobs_lock:
             job['status'] = 'completed'
             job['progress'] = 100
             job['title'] = actual_title
+            if thumb_url:
+                job['thumbnail'] = thumb_url
             job['filename'] = final_filename
             job['speed'] = ''
             job['eta'] = ''
@@ -776,7 +810,8 @@ def download():
             "job_id": job_id,
             "url": url,
             "media_type": media_type,
-            "quality": quality
+            "quality": quality,
+            "thumbnail": instant_thumb or (f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg" if vid else "")
         })
 
     return jsonify({"success": True, "jobs": created_jobs})

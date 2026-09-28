@@ -1684,7 +1684,7 @@
         <input type="checkbox" class="sg-batch-check" ${item.checked ? 'checked' : ''} />
         
         <div class="sg-batch-thumb-wrap">
-          <img class="sg-batch-thumb" src="${escapeHtml(item.thumbnail)}" alt="Thumb" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='https://i.ytimg.com/vi/${escapeHtml(extractVideoId(item.url))}/hqdefault.jpg';" />
+          <img class="sg-batch-thumb" src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='https://i.ytimg.com/vi/${escapeHtml(extractVideoId(item.url))}/hqdefault.jpg';" />
           <span class="sg-batch-duration">${escapeHtml(item.duration_str)}</span>
         </div>
 
@@ -1968,9 +1968,18 @@
     card.className = 'sg-active-card';
     card.id = `active-card-${jobId}`;
 
+    const vid = extractVideoId(url || '');
+    const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+    const safeThumb = thumbnail || fallbackThumb;
+
     card.innerHTML = `
       <div class="sg-active-thumb-wrap">
-        <img class="sg-active-thumb" id="active-thumb-${jobId}" src="${escapeHtml(thumbnail)}" alt="Thumb" />
+        ${safeThumb
+          ? `<img class="sg-active-thumb" id="active-thumb-${jobId}" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
+          : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </div>`
+        }
       </div>
 
       <div class="sg-active-content">
@@ -2019,11 +2028,19 @@
     card.id = `completed-card-${job.job_id}`;
 
     const isVideo = job.media_type === 'video' || (job.filename && job.filename.endsWith('.mp4'));
+    const vid = extractVideoId(job.url || '');
+    const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+    const safeThumb = job.thumbnail || fallbackThumb;
 
     card.innerHTML = `
       <div class="sg-completed-top">
         <div class="sg-active-thumb-wrap">
-          <img class="sg-active-thumb" src="${escapeHtml(job.thumbnail)}" alt="Thumb" />
+          ${safeThumb
+            ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
+            : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${isVideo ? '<polygon points="5 3 19 12 5 21 5 3"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}</svg>
+              </div>`
+          }
         </div>
         <div class="sg-completed-info">
           <h4 class="sg-completed-title" title="${escapeHtml(job.title)}">${escapeHtml(job.title)}</h4>
@@ -2231,7 +2248,10 @@
     const thumbEl = document.getElementById(`active-thumb-${jid}`);
 
     if (titleEl && job.title) titleEl.textContent = job.title;
-    if (thumbEl && job.thumbnail && thumbEl.src !== job.thumbnail) thumbEl.src = job.thumbnail;
+    if (thumbEl && job.thumbnail && thumbEl.src !== job.thumbnail) {
+      thumbEl.src = job.thumbnail;
+      thumbEl.style.display = '';
+    }
 
     if (!barEl) return;
 
@@ -2366,9 +2386,12 @@
       const card = document.createElement('div');
       card.className = 'sg-offline-card';
       const isVideo = item.media_type === 'video';
+      const vid = extractVideoId(item.url || '');
+      const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+      const safeThumb = item.thumbnail || fallbackThumb;
 
-      const thumbHtml = item.thumbnail
-        ? `<img class="sg-active-thumb" src="${escapeHtml(item.thumbnail)}" alt="Thumb" />`
+      const thumbHtml = safeThumb
+        ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
         : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               ${isVideo ? '<polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}
