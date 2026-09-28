@@ -8,9 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     STREAMGRAB_HOST=0.0.0.0 \
     STREAMGRAB_PORT=5000
 
-# Install FFmpeg and clean up apt caches
+# Install FFmpeg, Node.js (for YouTube JS challenge solver in yt-dlp), and clean up apt caches
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl && \
+    apt-get install -y --no-install-recommends ffmpeg curl nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory

@@ -1926,7 +1926,7 @@
       for (const job of data.jobs) {
         const jid = job.job_id;
         const vid = extractVideoId(job.url);
-        const thumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+        const thumb = job.thumbnail || (vid ? `/api/thumb/${vid}` : '');
 
         queueJobs[jid] = {
           job_id: jid,
@@ -1969,13 +1969,17 @@
     card.id = `active-card-${jobId}`;
 
     const vid = extractVideoId(url || '');
-    const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
-    const safeThumb = thumbnail || fallbackThumb;
+    const proxyThumb = vid ? `/api/thumb/${vid}` : '';
+    const directThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+    const safeThumb = thumbnail || proxyThumb || directThumb;
 
     card.innerHTML = `
       <div class="sg-active-thumb-wrap">
         ${safeThumb
-          ? `<img class="sg-active-thumb" id="active-thumb-${jobId}" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
+          ? `<img class="sg-active-thumb" id="active-thumb-${jobId}" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
+             <div class="sg-active-thumb" style="display:none;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+             </div>`
           : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             </div>`
@@ -2029,14 +2033,18 @@
 
     const isVideo = job.media_type === 'video' || (job.filename && job.filename.endsWith('.mp4'));
     const vid = extractVideoId(job.url || '');
-    const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
-    const safeThumb = job.thumbnail || fallbackThumb;
+    const proxyThumb = vid ? `/api/thumb/${vid}` : '';
+    const directThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+    const safeThumb = job.thumbnail || proxyThumb || directThumb;
 
     card.innerHTML = `
       <div class="sg-completed-top">
         <div class="sg-active-thumb-wrap">
           ${safeThumb
-            ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
+            ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
+               <div class="sg-active-thumb" style="display:none;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${isVideo ? '<polygon points="5 3 19 12 5 21 5 3"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}</svg>
+               </div>`
             : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${isVideo ? '<polygon points="5 3 19 12 5 21 5 3"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}</svg>
               </div>`
@@ -2387,11 +2395,15 @@
       card.className = 'sg-offline-card';
       const isVideo = item.media_type === 'video';
       const vid = extractVideoId(item.url || '');
-      const fallbackThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
-      const safeThumb = item.thumbnail || fallbackThumb;
+      const proxyThumb = vid ? `/api/thumb/${vid}` : '';
+      const directThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+      const safeThumb = item.thumbnail || proxyThumb || directThumb;
 
       const thumbHtml = safeThumb
-        ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; ${fallbackThumb ? `this.src='${fallbackThumb}';` : `this.style.display='none';`}" />`
+        ? `<img class="sg-active-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
+           <div class="sg-active-thumb" style="display:none;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${isVideo ? '<polygon points="5 3 19 12 5 21 5 3"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}</svg>
+           </div>`
         : `<div class="sg-active-thumb" style="display:flex;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               ${isVideo ? '<polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>' : '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'}

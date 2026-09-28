@@ -25,13 +25,14 @@ import threading
 import time
 import uuid
 import urllib.parse
+import urllib.request
 import io
 import zipfile
 import tempfile
 import secrets
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, request, jsonify, render_template, send_from_directory, send_file, abort
+from flask import Flask, request, jsonify, render_template, send_from_directory, send_file, abort, make_response, redirect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -91,12 +92,15 @@ BIND_PORT = int(os.environ.get('PORT', os.environ.get('STREAMGRAB_PORT', '5000')
 # Check external tool availability
 FFMPEG_AVAILABLE = shutil.which('ffmpeg') is not None
 DENO_AVAILABLE = shutil.which('deno') is not None
+NODE_AVAILABLE = shutil.which('node') is not None
 if FFMPEG_AVAILABLE:
     logger.info("FFmpeg detected: %s", shutil.which('ffmpeg'))
 else:
     logger.warning("FFmpeg not found in PATH. Media conversion will be limited.")
 if DENO_AVAILABLE:
     logger.info("Deno JS runtime detected: %s", shutil.which('deno'))
+if NODE_AVAILABLE:
+    logger.info("Node.js runtime detected: %s", shutil.which('node'))
 
 # ---------------------------------------------------------------------------
 # Flask Application Setup
@@ -351,6 +355,8 @@ def format_user_error(raw_error: str) -> str:
     lower = raw_error.lower()
     if "sign in to confirm you're not a bot" in lower or "confirm you're not a bot" in lower:
         return "YouTube bot check triggered. Please try again or upload a valid cookies.txt file."
+    if "error code: 152" in lower or "code: 152" in lower or "page needs to be reloaded" in lower:
+        return "YouTube client restriction encountered. Please retry or choose a different format."
     if "confirm your age" in lower or "age-restricted" in lower:
         return "This video is age-restricted and requires account authentication."
     if "private video" in lower:
@@ -447,8 +453,7 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
         'geo_bypass': False,
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv', 'web_embedded', 'mweb', 'default'],
-                'player_skip': ['configs', 'webpage'],
+                'player_client': ['web_embedded', 'mweb', 'default'],
             }
         }
     }
@@ -563,10 +568,10 @@ def process_download(job_id: str):
                 res_info = ydl.extract_info(clean_url, download=True)
         except Exception as first_attempt_err:
             err_text = str(first_attempt_err).lower()
-            if any(k in err_text for k in ['bot', 'sign in', 'po token', '403', 'unavailable']):
-                logger.warning("First attempt on %s failed (%s). Retrying with TV/embedded fallback...", clean_url, first_attempt_err)
+            if any(k in err_text for k in ['bot', 'sign in', 'po token', '403', 'unavailable', '152', 'reloaded']):
+                logger.warning("First attempt on %s failed (%s). Retrying with alternative fallback clients...", clean_url, first_attempt_err)
                 retry_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
-                retry_opts['extractor_args']['youtube']['player_client'] = ['tv', 'web_embedded', 'mweb', 'default']
+                retry_opts['extractor_args']['youtube']['player_client'] = ['mweb', 'android', 'tv', 'default']
                 with yt_dlp.YoutubeDL(retry_opts) as ydl:
                     res_info = ydl.extract_info(clean_url, download=True)
             else:
@@ -577,10 +582,10 @@ def process_download(job_id: str):
 
         actual_title = res_info.get('title') or job['title'] or 'YouTube Media'
         thumb_url = res_info.get('thumbnail')
-        if not thumb_url:
-            m = YOUTUBE_URL_REGEX.search(clean_url)
-            if m:
-                thumb_url = f"https://i.ytimg.com/vi/{m.group(1)}/hqdefault.jpg"
+        m = YOUTUBE_URL_REGEX.search(clean_url)
+        vid = m.group(1) if m else ""
+        if not thumb_url and vid:
+            thumb_url = f"/api/thumb/{vid}"
 
         final_filename = None
         if res_info.get('requested_downloads'):
@@ -660,8 +665,42 @@ def health():
         "status": "ok",
         "ffmpeg": FFMPEG_AVAILABLE,
         "deno": DENO_AVAILABLE,
+        "node": NODE_AVAILABLE,
         "cookies": has_cookies
     })
+
+
+@app.route('/api/thumb/<video_id>', methods=['GET'])
+@limiter.limit("120 per minute")
+def get_thumbnail_proxy(video_id):
+    """Proxy YouTube thumbnail from backend to bypass client-side adblockers and CORS."""
+    if not video_id or not re.match(r'^[a-zA-Z0-9_-]{11}$', video_id):
+        return jsonify({"error": "Invalid video ID"}), 400
+
+    candidates = [
+        f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+        f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg",
+        f"https://i.ytimg.com/vi/{video_id}/default.jpg"
+    ]
+
+    for thumb_url in candidates:
+        try:
+            req = urllib.request.Request(
+                thumb_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            )
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                if resp.status == 200:
+                    img_bytes = resp.read()
+                    r = make_response(img_bytes)
+                    r.headers['Content-Type'] = 'image/jpeg'
+                    r.headers['Cache-Control'] = 'public, max-age=86400, immutable'
+                    r.headers['Access-Control-Allow-Origin'] = '*'
+                    return r
+        except Exception:
+            continue
+
+    return redirect(f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")
 
 
 @app.route('/api/search', methods=['GET'])
@@ -778,7 +817,7 @@ def download():
         job_id = uuid.uuid4().hex[:12]
         m = YOUTUBE_URL_REGEX.search(url)
         vid = m.group(1) if m else ""
-        instant_thumb = f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg" if vid else None
+        instant_thumb = f"/api/thumb/{vid}" if vid else None
 
         job_record = {
             "job_id": job_id,
@@ -811,7 +850,7 @@ def download():
             "url": url,
             "media_type": media_type,
             "quality": quality,
-            "thumbnail": instant_thumb or (f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg" if vid else "")
+            "thumbnail": instant_thumb or ""
         })
 
     return jsonify({"success": True, "jobs": created_jobs})
