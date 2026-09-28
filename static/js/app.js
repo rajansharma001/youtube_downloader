@@ -1482,10 +1482,17 @@
       const durHtml = item.duration_str ? `<span class="sg-duration-tag">${item.duration_str}</span>` : '';
       const viewsStr = item.views_str ? item.views_str : '';
       const channelName = item.uploader || 'StreamGrab';
+      const vid = item.id || extractVideoId(item.url || '');
+      const proxyThumb = vid ? `/api/thumb/${vid}` : '';
+      const directThumb = vid ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : '';
+      const safeThumb = item.thumbnail || proxyThumb || directThumb;
 
       card.innerHTML = `
-        <div class="sg-thumb-wrap" title="Tap to Play Online">
-          <img class="sg-thumb-img" src="${escapeHtml(item.thumbnail)}" alt="${escapeHtml(item.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='https://i.ytimg.com/vi/${escapeHtml(item.id)}/hqdefault.jpg';" />
+        <div class="sg-thumb-wrap" title="Tap to Play Online" style="position:relative;background:#1e293b;overflow:hidden;">
+          <img class="sg-thumb-img" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if (this.src.indexOf('hqdefault.jpg') === -1 && '${directThumb}') { this.src='${directThumb}'; } else { this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex'; }" />
+          <div class="sg-thumb-fallback" style="display:none;width:100%;height:100%;position:absolute;top:0;left:0;align-items:center;justify-content:center;background:#1e293b;color:#ff6422;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
           ${durHtml}
         </div>
 

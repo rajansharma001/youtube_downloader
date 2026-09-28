@@ -371,10 +371,12 @@ def format_user_error(raw_error: str) -> str:
         return "FFmpeg is required for media conversion. Please install FFmpeg."
     if "timed out" in lower or "timeout" in lower:
         return "Connection to YouTube timed out. Please try again."
-    # Never return raw error messages that could leak internal info
-    if len(raw_error) > 200:
-        return "An unexpected error occurred. Please try again."
-    return raw_error
+
+    # Return clean first line of technical error
+    clean_err = raw_error.strip().split('\n')[0].strip()
+    if clean_err.startswith('ERROR:'):
+        clean_err = clean_err[6:].strip()
+    return clean_err[:250]
 
 
 def is_valid_authenticated_cookie_file(filepath: str) -> bool:
@@ -567,15 +569,24 @@ def process_download(job_id: str):
             with yt_dlp.YoutubeDL(dl_opts) as ydl:
                 res_info = ydl.extract_info(clean_url, download=True)
         except Exception as first_attempt_err:
-            err_text = str(first_attempt_err).lower()
-            if any(k in err_text for k in ['bot', 'sign in', 'po token', '403', 'unavailable', '152', 'reloaded']):
-                logger.warning("First attempt on %s failed (%s). Retrying with alternative fallback clients...", clean_url, first_attempt_err)
+            logger.warning("First attempt on %s failed: %s. Retrying with clean embedded clients...", clean_url, first_attempt_err)
+            try:
+                # Tier 2: Ignore cookies, use web_embedded and tv_embedded
                 retry_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
-                retry_opts['extractor_args']['youtube']['player_client'] = ['mweb', 'android', 'tv', 'default']
+                retry_opts['extractor_args']['youtube']['player_client'] = ['web_embedded', 'tv_embedded', 'mweb', 'default']
                 with yt_dlp.YoutubeDL(retry_opts) as ydl:
                     res_info = ydl.extract_info(clean_url, download=True)
-            else:
-                raise first_attempt_err
+            except Exception as second_attempt_err:
+                logger.warning("Second attempt on %s failed: %s. Retrying with broad formats...", clean_url, second_attempt_err)
+                try:
+                    # Tier 3: Universal format fallback
+                    final_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
+                    final_opts['format'] = 'bestaudio/best' if media_type == 'audio' else 'bestvideo+bestaudio/best'
+                    final_opts['extractor_args']['youtube']['player_client'] = ['mweb', 'android', 'web_embedded', 'default']
+                    with yt_dlp.YoutubeDL(final_opts) as ydl:
+                        res_info = ydl.extract_info(clean_url, download=True)
+                except Exception as final_err:
+                    raise final_err
 
         if not res_info:
             raise ValueError("Could not extract video metadata.")
@@ -591,12 +602,20 @@ def process_download(job_id: str):
         if res_info.get('requested_downloads'):
             for req in res_info['requested_downloads']:
                 fp = req.get('filepath')
-                if fp and fp.endswith(target_ext) and os.path.exists(fp):
-                    final_filename = os.path.basename(fp)
-                    break
+                if fp:
+                    if os.path.exists(fp) and fp.endswith(target_ext):
+                        final_filename = os.path.basename(fp)
+                        break
+                    target_fp = os.path.splitext(fp)[0] + target_ext
+                    if os.path.exists(target_fp):
+                        final_filename = os.path.basename(target_fp)
+                        break
+                    if os.path.exists(fp):
+                        final_filename = os.path.basename(fp)
+                        break
 
         if not final_filename:
-            media_exts = {target_ext}
+            media_exts = {target_ext, '.mp3', '.mp4', '.webm', '.m4a', '.mkv'}
             files = [
                 os.path.join(DOWNLOADS_DIR, f)
                 for f in os.listdir(DOWNLOADS_DIR)
@@ -604,11 +623,11 @@ def process_download(job_id: str):
             ]
             if files:
                 newest = max(files, key=os.path.getmtime)
-                if time.time() - os.path.getmtime(newest) < 120:
+                if time.time() - os.path.getmtime(newest) < 300:
                     final_filename = os.path.basename(newest)
 
         if not final_filename:
-            raise RuntimeError(f"Converted {target_ext.upper()} file was not found.")
+            raise RuntimeError("Downloaded media file was not found on server disk.")
 
         with jobs_lock:
             job['status'] = 'completed'
@@ -703,6 +722,46 @@ def get_thumbnail_proxy(video_id):
     return redirect(f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")
 
 
+@app.route('/api/debug/extract', methods=['GET'])
+@limiter.limit("30 per minute")
+def debug_extract():
+    """Diagnostic endpoint to test extraction with various player clients."""
+    url = request.args.get('url', 'https://www.youtube.com/watch?v=1YnkZS9e8MA')
+    target = clean_youtube_url(url)
+    results = {}
+    configs = {
+        'default_opts': build_yt_dlp_options('audio', '192', lambda d: None, lambda d: None),
+        'no_cookies_web_embedded': {
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['web_embedded', 'mweb', 'default']}}
+        },
+        'tv_embedded': {
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['tv_embedded', 'default']}}
+        },
+        'android': {
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['android', 'default']}}
+        },
+    }
+    for name, opts in configs.items():
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(target, download=False)
+                results[name] = {
+                    'success': True,
+                    'title': info.get('title'),
+                    'formats_count': len(info.get('formats', []))
+                }
+        except Exception as e:
+            results[name] = {
+                'success': False,
+                'error': str(e),
+                'type': type(e).__name__
+            }
+    return jsonify(results)
+
+
 @app.route('/api/search', methods=['GET'])
 @limiter.limit("15 per minute")
 def search_youtube():
@@ -740,15 +799,8 @@ def search_youtube():
                 if not vid or not re.match(r'^[a-zA-Z0-9_-]{11}$', vid):
                     continue
 
-                # Standard canonical YouTube thumbnail URL is guaranteed to resolve reliably
-                thumb_url = f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
-                thumbs = entry.get('thumbnails') or []
-                if thumbs:
-                    for t in reversed(thumbs):
-                        turl = t.get('url', '')
-                        if turl and ('ytimg.com' in turl or 'youtube.com' in turl):
-                            thumb_url = turl
-                            break
+                # Use backend thumbnail proxy for 100% reliable adblocker-immune display
+                thumb_url = f"/api/thumb/{vid}"
                 dur = entry.get('duration')
                 views = entry.get('view_count')
 
