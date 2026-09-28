@@ -56,6 +56,8 @@ sys.stderr.reconfigure(line_buffering=True)
 # Configuration from Environment
 # ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.abspath(os.path.join(BASE_DIR, 'templates'))
+STATIC_DIR = os.path.abspath(os.path.join(BASE_DIR, 'static'))
 TEMP_CACHE_DIR = os.path.join(tempfile.gettempdir(), 'streamgrab_media_cache')
 DOWNLOADS_DIR = os.environ.get('STREAMGRAB_STORAGE_DIR', TEMP_CACHE_DIR)
 COOKIE_FILE = os.path.join(BASE_DIR, 'cookies.txt')
@@ -90,7 +92,12 @@ if DENO_AVAILABLE:
 # ---------------------------------------------------------------------------
 # Flask Application Setup
 # ---------------------------------------------------------------------------
-app = Flask(__name__, template_folder='templates', static_folder='static')
+app = Flask(
+    __name__,
+    template_folder=TEMPLATES_DIR,
+    static_folder=STATIC_DIR,
+    static_url_path='/static'
+)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Don't cache static files aggressively
@@ -589,13 +596,13 @@ def index():
 @app.route('/sw.js')
 def service_worker():
     """Serve Service Worker from root scope."""
-    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
+    return send_from_directory(STATIC_DIR, 'sw.js', mimetype='application/javascript')
 
 
 @app.route('/manifest.json')
 def web_manifest():
     """Serve PWA Web App Manifest."""
-    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+    return send_from_directory(STATIC_DIR, 'manifest.json', mimetype='application/manifest+json')
 
 
 # ---------------------------------------------------------------------------
@@ -1109,8 +1116,11 @@ def periodic_cleanup():
             logger.info("Cleaned %d stale jobs", len(stale_ids))
 
 
-cleanup_thread = threading.Thread(target=periodic_cleanup, daemon=True)
-cleanup_thread.start()
+# Start cleanup daemon thread only in persistent environments (Waitress, Gunicorn, Docker).
+# Serverless platforms (Vercel, AWS Lambda) freeze or error on unmanaged background loop threads.
+if not os.environ.get('VERCEL') and not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    cleanup_thread = threading.Thread(target=periodic_cleanup, daemon=True)
+    cleanup_thread.start()
 
 
 # ---------------------------------------------------------------------------
