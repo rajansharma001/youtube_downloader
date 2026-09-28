@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#ff6422">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="referrer" content="no-referrer">
+  <title>StreamGrab - YouTube Media Downloader &amp; Player</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=20260928_v8">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/img/icon-192.png">
+  <link rel="shortcut icon" href="/static/img/favicon.png">
+</head>
+<body class="theme-light" id="app-body">
+  <div class="streamgrab-app">
+
+    <!-- Top App Header (StreamGrab Logo + User Avatar) -->
+    <header class="sg-header">
+      <div class="sg-brand" id="brand-home-trigger" title="StreamGrab Home">
+        <div class="sg-logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#ff6422"/>
+            <path d="M10 8L16 12L10 16V8Z" fill="#ffffff"/>
+            <circle cx="17.5" cy="6.5" r="2.5" fill="#1e293b"/>
+          </svg>
+        </div>
+        <span class="sg-brand-name">Stream<span class="sg-brand-accent">Grab</span></span>
+      </div>
+
+      <div class="sg-header-actions">
+        <!-- Settings Shortcut Avatar Button -->
+        <button type="button" class="sg-avatar-btn" id="btn-user-avatar" title="Settings &amp; Options">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Screens Container -->
+    <main class="sg-main">
+
+      <!-- ========================================================
+           DIRECT ONLINE WATCH & DOWNLOAD DECK
+           (Play Upper Side, All Download Options Bottom Side)
+           (Floating YouTube-Style Mini Player when on other screens)
+           ======================================================== -->
+      <div class="sg-watch-deck" id="sg-watch-deck" style="display: none;">
+        <div class="sg-watch-card">
+          <!-- Mini player drag resize handle (YouTube-style width adjuster) -->
+          <div class="sg-mini-resize-handle" id="mini-resize-handle" title="Drag to adjust mini player width" aria-label="Resize Mini Player">
+            <span></span>
+          </div>
+
+          <!-- Top Player Header: Title, Minimize, Expand, Fullscreen & Close -->
+          <div class="sg-player-topbar" id="sg-player-deck-header">
+            <div class="sg-player-title-info" id="deck-drag-title-info">
+              <span class="sg-mini-drag-grip" id="mini-drag-handle" title="Drag to move mini-player">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="8" cy="6" r="1.8"></circle>
+                  <circle cx="16" cy="6" r="1.8"></circle>
+                  <circle cx="8" cy="12" r="1.8"></circle>
+                  <circle cx="16" cy="12" r="1.8"></circle>
+                  <circle cx="8" cy="18" r="1.8"></circle>
+                  <circle cx="16" cy="18" r="1.8"></circle>
+                </svg>
+              </span>
+              <span class="sg-player-tag">PLAYING</span>
+              <span class="sg-player-header-title" id="deck-video-title-bar">StreamGrab Player</span>
+            </div>
+            <div class="sg-player-header-actions">
+              <!-- Share Video -->
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-share" title="Share Video">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+              </button>
+              <!-- Picture-in-Picture (Float outside app) -->
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-pip" title="Float over other apps (Picture-in-Picture)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <rect x="12" y="9" width="8" height="6" rx="1" ry="1" fill="currentColor"></rect>
+                </svg>
+              </button>
+              <!-- Expand back to full player (mini mode) -->
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-expand-mini" title="Expand to Full Screen" style="display: none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <polyline points="9 21 3 21 3 15"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+              </button>
+              <!-- Cycle mini player width (S / M / L) -->
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-size-toggle" title="Cycle Mini Player Size (S/M/L)" style="display: none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <polyline points="9 9 15 9 15 15"></polyline>
+                </svg>
+              </button>
+              <!-- Minimize to floating corner mini-player -->
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-minimize" title="Minimize to Mini Player">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="4 14 10 14 10 20"></polyline>
+                  <polyline points="20 10 14 10 14 4"></polyline>
+                  <line x1="14" y1="10" x2="21" y2="3"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+              </button>
+              <button type="button" class="sg-btn-deck-action" id="btn-deck-fullscreen" title="Rotate Fullscreen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+              </button>
+              <button type="button" class="sg-btn-deck-action sg-btn-close-deck" id="btn-close-deck" title="Close Player">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upper Side: Embedded 16:9 Online Video Player -->
+          <div class="sg-player-frame">
+            <div class="sg-iframe-container" id="inline-player-container">
+              <!-- Video player injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Main Player Custom Controls (Matching Custom Controller UX) -->
+          <div class="sg-deck-custom-controls" id="deck-custom-controls">
+            <!-- Custom Seeker Timeline -->
+            <div class="sg-timeline-box sg-deck-timeline">
+              <input type="range" class="sg-timeline-slider" id="deck-video-seeker" min="0" max="100" value="0" step="0.1" />
+              <div class="sg-timeline-times">
+                <span id="deck-video-current-time">00:00</span>
+                <span id="deck-video-total-time">00:00</span>
+              </div>
+            </div>
+
+            <!-- Custom Controls Row (Rewind -10s, Circular Orange Play/Pause, Forward +10s, Quality Adjuster) -->
+            <div class="sg-music-controls-row sg-deck-controls-row">
+              <button type="button" class="sg-ctrl-btn" id="btn-deck-rewind-10" title="Rewind 10 Seconds">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M1 4v6h6"></path>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+              </button>
+
+              <button type="button" class="sg-play-pause-btn" id="btn-deck-play-pause" title="Play / Pause Online Video">
+                <svg class="sg-deck-icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg class="sg-deck-icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+              </button>
+
+              <button type="button" class="sg-ctrl-btn" id="btn-deck-forward-10" title="Forward 10 Seconds">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+              </button>
+
+              <!-- Video Resolution Quality Adjuster -->
+              <div class="sg-res-selector-wrap" id="deck-res-selector-wrap">
+                <button type="button" class="sg-btn-res-pill" id="btn-deck-res-menu" title="Adjust Resolution">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 1 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  <span id="deck-current-res-label">Auto HD</span>
+                </button>
+                <div class="sg-res-menu-dropdown" id="deck-res-dropdown" style="display: none;">
+                  <div class="sg-res-option" data-res="hd1080" data-label="1080p HD">1080p HD</div>
+                  <div class="sg-res-option" data-res="hd720" data-label="720p HD">720p HD</div>
+                  <div class="sg-res-option" data-res="large" data-label="480p">480p</div>
+                  <div class="sg-res-option" data-res="medium" data-label="360p">360p</div>
+                  <div class="sg-res-option" data-res="small" data-label="240p">240p</div>
+                  <div class="sg-res-option active" data-res="default" data-label="Auto HD">Auto HD</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Side: Metadata & Collapsible Download Section -->
+          <div class="sg-watch-details">
+            <div class="sg-watch-header-row">
+              <div class="sg-watch-titles">
+                <h3 class="sg-watch-title" id="deck-video-title">Video Title</h3>
+                <div class="sg-watch-meta-row">
+                  <span class="sg-watch-channel" id="deck-video-channel">Channel</span>
+                  <span class="sg-dot-sep">&bull;</span>
+                  <span class="sg-watch-views" id="deck-video-views">Views</span>
+                  <!-- Share Link Button in Meta Row -->
+                  <button type="button" class="sg-action-link" id="btn-deck-share-link" style="margin-left: auto;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span>Share</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Download Options Collapsible Section Directly Under Video -->
+            <div class="sg-watch-download-box" id="deck-download-box">
+              <button type="button" class="sg-btn-download-accordion-toggle" id="btn-toggle-download-deck" title="Toggle Download Options">
+                <div class="sg-accordion-toggle-left">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download Options</span>
+                  <span class="sg-chip-badge" id="deck-collapsed-quality-badge">1080p MP4</span>
+                </div>
+                <div class="sg-accordion-toggle-right">
+                  <span class="sg-accordion-hint" id="deck-accordion-hint">Click to show options</span>
+                  <svg class="sg-accordion-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </button>
+
+              <div class="sg-download-accordion-content" id="deck-download-content" style="display: none;">
+                <!-- Quality Selection Chips -->
+                <div class="sg-quality-chips" id="deck-quality-chips">
+                  <button type="button" class="sg-chip active" data-quality="1080" data-type="video">1080p</button>
+                  <button type="button" class="sg-chip" data-quality="720" data-type="video">720p</button>
+                  <button type="button" class="sg-chip" data-quality="480" data-type="video">480p</button>
+                  <button type="button" class="sg-chip" data-quality="360" data-type="video">360p</button>
+                  <button type="button" class="sg-chip" data-quality="320" data-type="audio">MP3 320k</button>
+                  <button type="button" class="sg-chip" data-quality="192" data-type="audio">MP3 192k</button>
+                </div>
+
+                <!-- Format & Download Actions Row -->
+                <div class="sg-deck-actions-grid">
+                  <div class="sg-toggle-group" id="deck-format-toggle">
+                    <button type="button" class="sg-toggle-btn active" data-val="video">Video (MP4)</button>
+                    <button type="button" class="sg-toggle-btn" data-val="audio">Audio (MP3)</button>
+                  </div>
+
+                  <div class="sg-deck-btns-row">
+                    <button type="button" class="sg-btn-cta-orange" id="btn-deck-download">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span id="deck-download-btn-text">Download (1080p)</span>
+                    </button>
+
+                    <button type="button" class="sg-btn-ghost btn-sm" id="btn-deck-add-batch" title="Add to Batch Downloader">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span>Add to Batch</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCREEN 1: SEARCH & EXPLORE (With Direct Watch & Download)
+           ======================================================== -->
+      <section class="sg-screen active" id="section-search">
+        <!-- Search Bar (Pill with Mic + Orange Search Button) -->
+        <div class="sg-search-wrap">
+          <div class="sg-search-bar">
+            <input
+              type="search"
+              id="search-input"
+              class="sg-search-input"
+              placeholder="Search YouTube, trending, Japanese, music or paste link..."
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+            <button type="button" id="btn-search-clear" class="sg-search-clear" style="display: none;" title="Clear">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <button type="button" id="btn-mic-icon" class="sg-mic-btn" title="Voice Search (Click to speak)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff6422">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+              </svg>
+            </button>
+            <button type="button" id="btn-search-icon" class="sg-search-submit" title="Search YouTube">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Curated Preset Pills Row (Trending, Japanese, Music, Tech) -->
+        <div class="sg-filter-scroll">
+          <div class="sg-filter-chips">
+            <button type="button" class="sg-filter-chip active" data-query="trending">🔥 Trending</button>
+            <button type="button" class="sg-filter-chip" data-query="Japanese Learning for Beginners Conversation Culture">🇯🇵 Japanese Lessons</button>
+            <button type="button" class="sg-filter-chip" data-query="Japan Culture Traditions Life in Japan Documentary">Japan Culture</button>
+            <button type="button" class="sg-filter-chip" data-query="popular anime songs soundtrack music">Anime &amp; Music</button>
+            <button type="button" class="sg-filter-chip" data-query="programming coding technology tutorials">Coding &amp; Tech</button>
+            <button type="button" class="sg-filter-chip" data-query="trending gaming gameplay highlights">Gaming</button>
+            <button type="button" class="sg-filter-chip" data-query="Japanese Lo-Fi Chill Beats Tokyo Night">Lo-Fi Chill</button>
+          </div>
+        </div>
+
+        <!-- Section Title: "Search Results" -->
+        <div class="sg-section-header">
+          <h2 class="sg-section-title" id="results-heading">Search Results</h2>
+          <span class="sg-results-badge" id="results-count-badge">Popular</span>
+        </div>
+
+        <!-- Search Status / Spinner Bar -->
+        <div class="sg-search-status" id="search-status-bar" style="display: none;">
+          <div class="sg-spinner"></div>
+          <span id="search-status-text">Searching YouTube...</span>
+        </div>
+
+        <!-- 2-Column Responsive Feed Grid (Matching Screen 1) -->
+        <div class="sg-grid-2col" id="search-results-grid" role="list">
+          <div class="sg-empty-state" id="search-empty-state">
+            <p>Paste a YouTube URL above or enter keywords to browse videos.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           SCREEN 2: BATCH DOWNLOADER (Matching Screen 2)
+           ======================================================== -->
+      <section class="sg-screen" id="section-batch" style="display: none;">
+        <div class="sg-screen-header">
+          <h1 class="sg-screen-title">Batch Downloader</h1>
+        </div>
+
+        <!-- Add Video Links Card -->
+        <div class="sg-card sg-add-links-card">
+          <div class="sg-card-title-row">
+            <h3 class="sg-card-label">Add Video Links</h3>
+            <button type="button" class="sg-text-btn" id="btn-paste-clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Paste Clipboard</span>
+            </button>
+          </div>
+
+          <div class="sg-add-input-row">
+            <input
+              type="text"
+              id="batch-single-input"
+              class="sg-input"
+              placeholder="Paste YouTube Link here..."
+              autocomplete="off"
+            />
+            <button type="button" id="btn-add-batch-url" class="sg-btn-add" title="Add Link to Batch">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Multi-line Bulk Paste Toggle Area -->
+          <div class="sg-multiline-toggle-row">
+            <button type="button" class="sg-toggle-link" id="btn-toggle-bulk-textarea">
+              + Or paste multiple URLs at once
+            </button>
+            <span class="sg-url-count-badge" id="batch-detected-count">0 Links Added</span>
+          </div>
+
+          <div id="bulk-textarea-container" style="display: none; margin-top: 10px;">
+            <textarea
+              id="urls-input"
+              class="sg-textarea"
+              rows="4"
+              placeholder="Paste multiple URLs (one per line)..."
+            ></textarea>
+            <div class="sg-textarea-actions">
+              <button type="button" class="sg-btn-ghost btn-sm" id="btn-format">Format & Clean</button>
+              <button type="button" class="sg-btn-ghost btn-sm" id="btn-add-bulk">Add All</button>
+            </div>
+          </div>
+          <span class="sg-error-text" id="batch-validation-msg"></span>
+        </div>
+
+        <!-- List of Queued Videos in Batch (Matching Screen 2 list items) -->
+        <div class="sg-batch-list-wrap">
+          <div class="sg-batch-list-header">
+            <span class="sg-list-subhead" id="batch-list-summary">Videos to Download</span>
+            <button type="button" class="sg-text-btn text-danger" id="btn-clear-batch">Clear All</button>
+          </div>
+
+          <div class="sg-batch-items-list" id="batch-items-list" role="list">
+            <div class="sg-empty-batch" id="batch-empty-placeholder">
+              <div class="sg-empty-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <p>No video links added yet.<br>Paste a YouTube URL above and tap <strong>+</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full-Width Bottom Action Button (Matching Screen 2 Orange CTA) -->
+        <div class="sg-sticky-cta-wrap">
+          <button type="button" class="sg-btn-cta-orange" id="btn-start-batch">
+            <span class="sg-cta-main">Start Batch Download</span>
+            <span class="sg-cta-sub" id="batch-selected-count-label">0 videos selected</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           SCREEN 3: DOWNLOADS (Active, Completed & Offline Library)
+           ======================================================== -->
+      <section class="sg-screen" id="section-queue" style="display: none;">
+        <div class="sg-screen-header">
+          <h1 class="sg-screen-title">Downloads</h1>
+        </div>
+
+        <!-- Segmented Tab Switcher: "Active (X)" | "Completed (Y)" | "Offline (Z)" -->
+        <div class="sg-segmented-tabs">
+          <button type="button" class="sg-tab-item active" id="tab-downloads-active" data-view="active">
+            Active (<span id="active-tab-counter">0</span>)
+          </button>
+          <button type="button" class="sg-tab-item" id="tab-downloads-completed" data-view="completed">
+            Completed (<span id="completed-tab-counter">0</span>)
+          </button>
+          <button type="button" class="sg-tab-item" id="tab-downloads-offline" data-view="offline">
+            Offline (<span id="offline-tab-counter">0</span>)
+          </button>
+        </div>
+
+        <!-- 3A. Active Section (Matching Screen 3 Active) -->
+        <div class="sg-downloads-pane active" id="pane-active-downloads">
+          <div class="sg-downloads-list" id="active-downloads-list" role="list">
+            <div class="sg-empty-state" id="active-empty-state">
+              <p>No active downloads in progress.<br>Start a download from Search or Batch.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3B. Completed Section (Matching Screen 3 Completed) -->
+        <div class="sg-downloads-pane" id="pane-completed-downloads" style="display: none;">
+          <div class="sg-completed-header-row">
+            <button type="button" class="sg-btn-ghost btn-sm" id="btn-download-all-zip" title="Save All as ZIP archive to Device">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Save All to Device (ZIP)</span>
+            </button>
+            <button type="button" class="sg-btn-ghost btn-sm" id="btn-save-all-offline" title="Save all completed files to Device Offline Storage (IndexedDB)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Save All Offline</span>
+            </button>
+            <button type="button" class="sg-text-btn text-danger" id="btn-clear-completed">
+              Clear
+            </button>
+          </div>
+
+          <div class="sg-downloads-list" id="completed-downloads-list" role="list">
+            <div class="sg-empty-state" id="completed-empty-state">
+              <p>No completed downloads yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3C. Offline Section (Saved on Device Storage for Offline Playback) -->
+        <div class="sg-downloads-pane" id="pane-offline-downloads" style="display: none;">
+          <div class="sg-completed-header-row">
+            <button type="button" class="sg-btn-ghost btn-sm" id="btn-import-local-file">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Open Local Device File</span>
+            </button>
+            <button type="button" class="sg-text-btn text-danger" id="btn-clear-offline">
+              Clear Storage
+            </button>
+            <input type="file" id="local-file-picker" accept="audio/*,video/*" multiple style="display: none;">
+          </div>
+
+          <div class="sg-offline-info-banner">
+            <span class="sg-offline-pill">OFFLINE READY</span>
+            <span class="sg-offline-text">Plays anytime with NO internet connection or server required.</span>
+          </div>
+
+          <div class="sg-downloads-list" id="offline-downloads-list" role="list">
+            <div class="sg-empty-state" id="offline-empty-state">
+              <p>No offline media saved yet.<br>Tap <strong>Save Offline</strong> on any completed download, or <strong>Open Local Device File</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           SCREEN 4: SETTINGS (Matching Screen 4)
+           ======================================================== -->
+      <section class="sg-screen" id="section-settings" style="display: none;">
+        <div class="sg-screen-header">
+          <h1 class="sg-screen-title">Settings</h1>
+        </div>
+
+        <div class="sg-settings-list">
+          <!-- 1. Storage Destination (Device & Offline Storage) -->
+          <div class="sg-setting-row" id="row-download-path">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Storage Destination</span>
+                <span class="sg-setting-value-sub" id="settings-path-label">Device &amp; Offline Storage (Zero in source)</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-link-btn" id="btn-change-directory">Inspect</button>
+            </div>
+          </div>
+
+          <!-- Feed & Explore Content Preference -->
+          <div class="sg-setting-row sg-setting-feed-pref" id="row-feed-preference">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Default Feed &amp; Topic Preference</span>
+                <span class="sg-setting-value-sub">Choose what kind of content loads on home explore page</span>
+              </div>
+            </div>
+            <div class="sg-feed-chips" id="settings-feed-chips">
+              <button type="button" class="sg-chip active" data-topic="trending">🔥 Trending</button>
+              <button type="button" class="sg-chip" data-topic="japanese">🇯🇵 Japanese Culture</button>
+              <button type="button" class="sg-chip" data-topic="tech">💻 Coding &amp; Tech</button>
+              <button type="button" class="sg-chip" data-topic="music">🎵 Music &amp; Hits</button>
+              <button type="button" class="sg-chip" data-topic="gaming">🎮 Gaming</button>
+              <button type="button" class="sg-chip" data-topic="custom">✏️ Custom Topic...</button>
+            </div>
+            <div id="settings-custom-topic-box" style="display: none; width: 100%; margin-top: 8px;">
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="settings-custom-topic-input" class="sg-search-input" placeholder="e.g. Anime OST, Space Science, Cooking..." style="flex: 1; font-size: 0.8rem; padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);" />
+                <button type="button" class="sg-btn-cta-orange btn-sm" id="btn-save-custom-topic">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Auto-Save to Device -->
+          <div class="sg-setting-row" id="row-auto-save-device">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="8 17 12 21 16 17"></polyline>
+                  <line x1="12" y1="12" x2="12" y2="21"></line>
+                  <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Auto-Save to Device</span>
+                <span class="sg-setting-value-sub">Prompt download to device when file is ready</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <label class="sg-switch-wrap">
+                <input type="checkbox" id="switch-auto-save-device" checked>
+                <span class="sg-switch-track">
+                  <span class="sg-switch-knob"></span>
+                  <span class="sg-switch-text sg-switch-on">ON</span>
+                  <span class="sg-switch-text sg-switch-off">OFF</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 3. Standalone Mode (Zero Sign-in) -->
+          <div class="sg-setting-row" id="row-standalone-mode">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="7" r="4"></circle>
+                  <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path>
+                  <circle cx="19" cy="4" r="2"></circle>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Standalone Guest Access</span>
+                <span class="sg-setting-value-sub">No sign-in required &bull; 100% Private</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <span class="sg-status-chip" style="color: var(--sg-green); border-color: var(--sg-green);">Active</span>
+            </div>
+          </div>
+
+          <!-- 4. Install Standalone App (PWA) -->
+          <div class="sg-setting-row" id="row-pwa-install" style="display: none;">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Install Standalone App</span>
+                <span class="sg-setting-value-sub">Add to Phone Home Screen or PC Desktop</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-btn-cta-orange btn-sm" id="btn-install-pwa">Install</button>
+            </div>
+          </div>
+
+          <!-- 2. Default Quality -->
+          <div class="sg-setting-row" id="row-default-quality">
+            <div class="sg-setting-left">
+              <span class="sg-setting-label">Default Quality</span>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-pill-val-btn" id="btn-cycle-quality">
+                <span id="setting-quality-val">Auto 1080p</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Format -->
+          <div class="sg-setting-row" id="row-format">
+            <div class="sg-setting-left">
+              <span class="sg-setting-label">Format</span>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-pill-val-btn" id="btn-cycle-format">
+                <span id="setting-format-val">MP4</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. Max Connections -->
+          <div class="sg-setting-row" id="row-connections">
+            <div class="sg-setting-left">
+              <span class="sg-setting-label">Max Connections</span>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-pill-val-btn" id="btn-cycle-connections">
+                <span id="setting-connections-val">5</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 5. Dark Mode (Working Toggle Switch) -->
+          <div class="sg-setting-row" id="row-dark-mode">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </span>
+              <span class="sg-setting-label">Dark Mode</span>
+            </div>
+            <div class="sg-setting-right">
+              <label class="sg-switch-wrap">
+                <input type="checkbox" id="switch-dark-mode">
+                <span class="sg-switch-track">
+                  <span class="sg-switch-knob"></span>
+                  <span class="sg-switch-text sg-switch-on">ON</span>
+                  <span class="sg-switch-text sg-switch-off">OFF</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. Offline Device Storage (Browser IndexedDB) -->
+          <div class="sg-setting-row sg-clickable" id="row-offline-storage">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Offline Device Storage</span>
+                <span class="sg-setting-value-sub" id="settings-offline-size">0 Items &bull; 0.0 MB</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <button type="button" class="sg-link-btn" id="btn-view-offline-library">Manage</button>
+            </div>
+          </div>
+
+          <!-- Network Connection Status (Moved from Header to Settings) -->
+          <div class="sg-setting-row sg-clickable" id="row-network-status">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                  <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Network &amp; Sync Status</span>
+                <span class="sg-setting-value-sub" id="settings-network-status">Online (Device Connected)</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <span class="sg-status-dot dot-green" id="settings-network-dot"></span>
+            </div>
+          </div>
+
+          <!-- 7. YouTube Authentication / Cookies (Bot bypass) -->
+          <div class="sg-setting-row sg-clickable" id="row-cookies">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">YouTube Bot Bypass</span>
+                <span class="sg-setting-value-sub" id="settings-cookies-status">Checking...</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="sg-chevron">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 8. Engine Diagnostics & Ping -->
+          <div class="sg-setting-row sg-clickable" id="row-diagnostics">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label">Engine Diagnostics & Latency</span>
+                <span class="sg-setting-value-sub" id="settings-ping-label">Ping test</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="sg-chevron">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 9. About -->
+          <div class="sg-setting-row sg-clickable" id="row-about">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </span>
+              <span class="sg-setting-label">About StreamGrab</span>
+            </div>
+            <div class="sg-setting-right">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="sg-chevron">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Source, Privacy & Content Attribution Card -->
+        <div class="sg-card sg-attribution-card" style="margin-top: 14px;">
+          <div class="sg-attribution-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>100% Free &amp; Open Source</span>
+          </div>
+          <p class="sg-attribution-text">
+            StreamGrab is a standalone public utility. It requires <strong>zero sign-in</strong>, <strong>zero permissions</strong>, and collects <strong>no user data or tracking telemetry</strong>.
+          </p>
+          <div class="sg-attribution-divider"></div>
+          <p class="sg-attribution-credit">
+            <strong>Content Credit:</strong> All video, music, and streaming content is delivered directly from and credited to <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" class="sg-attribution-link">YouTube.com</a> and its respective creators.
+          </p>
+        </div>
+
+        <!-- Lead Developer & Architecture Profile Card -->
+        <div class="sg-card sg-developer-card" style="margin-top: 14px;">
+          <div class="sg-dev-header">
+            <div class="sg-dev-avatar">
+              <span>RS</span>
+            </div>
+            <div class="sg-dev-info">
+              <div class="sg-dev-name-row">
+                <h4 class="sg-dev-name">Rajan Sharma</h4>
+                <span class="sg-dev-badge">Author &amp; Lead Engineer</span>
+              </div>
+              <p class="sg-dev-role">Full-Stack Software Engineer &bull; Kathmandu, Nepal</p>
+            </div>
+          </div>
+          <p class="sg-dev-bio">
+            Building production-grade web systems, REST APIs &amp; scalable backends. 14+ production systems shipped across LMS, POS, tourism &amp; geospatial domains.
+          </p>
+          <div class="sg-dev-skills">
+            <span class="sg-dev-skill-pill">Next.js 16</span>
+            <span class="sg-dev-skill-pill">React 19</span>
+            <span class="sg-dev-skill-pill">TypeScript</span>
+            <span class="sg-dev-skill-pill">Node.js</span>
+            <span class="sg-dev-skill-pill">Python</span>
+            <span class="sg-dev-skill-pill">PostgreSQL</span>
+            <span class="sg-dev-skill-pill">Tailwind CSS</span>
+          </div>
+          <div class="sg-dev-links">
+            <a href="https://www.rajansharma.info.np/" target="_blank" rel="noopener noreferrer" class="sg-dev-link-btn" title="View Portfolio &amp; Engineering Projects">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>Portfolio</span>
+            </a>
+            <a href="https://github.com/rajansharma001/youtube_downloader" target="_blank" rel="noopener noreferrer" class="sg-dev-link-btn" title="View GitHub Repository">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              <span>GitHub</span>
+            </a>
+            <a href="mailto:email.rajan001@gmail.com" class="sg-dev-link-btn" title="Contact Developer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <span>Contact</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Bottom Mini Player (Docked above bottom nav) -->
+    <div class="sg-mini-player" id="sg-mini-player" style="display: none;">
+      <div class="sg-mini-art-wrap" id="mini-player-expand-trigger" title="Tap to expand player">
+        <div class="sg-mini-disc" id="mini-vinyl-disc">
+          <img id="mini-art-img" src="" alt="Art" style="display:none;" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff6422" stroke-width="2.2" id="mini-art-svg">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="sg-mini-info" id="mini-player-info-trigger" title="Tap to expand player">
+        <span class="sg-mini-title" id="mini-player-title">Title</span>
+        <span class="sg-mini-artist" id="mini-player-artist">StreamGrab</span>
+      </div>
+
+      <div class="sg-mini-actions">
+        <button type="button" class="sg-mini-btn" id="btn-mini-prev" title="Previous Track">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="19 20 9 12 19 4 19 20"></polygon>
+            <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="sg-mini-btn sg-mini-play-btn" id="btn-mini-play-pause" title="Play / Pause">
+          <svg class="sg-mini-icon-play" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg class="sg-mini-icon-pause" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </button>
+
+        <button type="button" class="sg-mini-btn" id="btn-mini-next" title="Next Track">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="sg-mini-btn text-muted" id="btn-mini-close" title="Close Mini Player">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Dock (Matching Screen 1-4 Bottom Bar) -->
+    <nav class="sg-bottom-nav" aria-label="Bottom Navigation">
+      <button type="button" class="sg-nav-tab active" data-target="section-search">
+        <svg class="sg-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="sg-nav-label">Search</span>
+      </button>
+
+      <button type="button" class="sg-nav-tab" data-target="section-batch">
+        <svg class="sg-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span class="sg-nav-label">Batch</span>
+      </button>
+
+      <button type="button" class="sg-nav-tab" data-target="section-queue">
+        <svg class="sg-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        <span class="sg-nav-label">Queue</span>
+        <span class="sg-nav-badge" id="nav-queue-count" style="display: none;">0</span>
+      </button>
+
+      <button type="button" class="sg-nav-tab" data-target="section-settings">
+        <svg class="sg-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span class="sg-nav-label">Settings</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ========================================================
+       MODAL 1: DOWNLOAD OPTIONS BOTTOM SHEET (Matching Screen 5)
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="download-options-modal" style="display: none;">
+    <div class="sg-bottom-sheet">
+      <!-- Sheet Drag Handle -->
+      <div class="sg-drag-handle"></div>
+
+      <!-- Featured Video Banner Image -->
+      <div class="sg-sheet-thumb-wrap">
+        <img id="sheet-video-thumb" src="" alt="Thumbnail" class="sg-sheet-thumb" />
+        <span class="sg-sheet-duration" id="sheet-video-duration">00:00</span>
+      </div>
+
+      <!-- Video Title -->
+      <h3 class="sg-sheet-title" id="sheet-video-title">Explore Space (4K)</h3>
+      <span class="sg-sheet-subhead">Download Options</span>
+
+      <!-- Choose Quality Chips Row (Matching Screen 5) -->
+      <div class="sg-sheet-section">
+        <span class="sg-sheet-section-label">Choose Quality</span>
+        <div class="sg-quality-chips" id="sheet-quality-chips">
+          <button type="button" class="sg-chip active" data-quality="2160" data-type="video">2160p 4K</button>
+          <button type="button" class="sg-chip" data-quality="1080" data-type="video">1080p</button>
+          <button type="button" class="sg-chip" data-quality="720" data-type="video">720p</button>
+          <button type="button" class="sg-chip" data-quality="480" data-type="video">480p</button>
+          <button type="button" class="sg-chip" data-quality="320" data-type="audio">MP3 320k</button>
+          <button type="button" class="sg-chip" data-quality="192" data-type="audio">MP3 192k</button>
+        </div>
+      </div>
+
+      <!-- Format Selection Row -->
+      <div class="sg-sheet-row">
+        <span class="sg-sheet-row-label">Format</span>
+        <div class="sg-toggle-group" id="sheet-format-toggle">
+          <button type="button" class="sg-toggle-btn active" data-val="video">Video (MP4)</button>
+          <button type="button" class="sg-toggle-btn" data-val="audio">Audio (MP3)</button>
+        </div>
+      </div>
+
+      <!-- Subtitles Selection Row -->
+      <div class="sg-sheet-row">
+        <span class="sg-sheet-row-label">Subtitles</span>
+        <div class="sg-toggle-group" id="sheet-subtitles-toggle">
+          <button type="button" class="sg-toggle-btn" data-val="on">ON</button>
+          <button type="button" class="sg-toggle-btn active" data-val="off">OFF</button>
+        </div>
+      </div>
+
+      <!-- Confirm Download Button (Orange CTA matching Screen 5) -->
+      <div class="sg-sheet-cta-row">
+        <button type="button" class="sg-btn-cta-orange" id="btn-confirm-download">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="sg-btn-svg">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Confirm Download</span>
+        </button>
+        <button type="button" class="sg-btn-secondary" id="btn-sheet-add-batch">
+          + Add to Batch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 2: CUSTOM MEDIA & MUSIC PLAYER MODAL
+       (Custom Music Player Layout + Video Player with Playlist Navigation)
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="local-player-modal" style="display: none;">
+    <div class="sg-dialog-card sg-player-card">
+      <div class="sg-dialog-header">
+        <div class="sg-dialog-title-group">
+          <span class="sg-player-badge" id="player-type-badge">Music</span>
+          <span class="sg-player-track-counter" id="player-track-counter">1 of 1</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <!-- Share Media -->
+          <button type="button" class="sg-btn-deck-action" id="btn-local-player-share" title="Share Media">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </button>
+          <button type="button" class="sg-btn-close" id="btn-close-local-player" title="Minimize / Close Player">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Native Audio Element (Hidden backend driver) -->
+      <audio id="sg-native-audio" style="display: none;"></audio>
+
+      <!-- Music Player View (Active when playing MP3 audio) -->
+      <div class="sg-custom-audio-deck" id="sg-custom-audio-deck">
+        <!-- Vinyl Disc / Album Art -->
+        <div class="sg-vinyl-wrapper">
+          <div class="sg-vinyl-disc" id="player-vinyl-disc">
+            <div class="sg-vinyl-grooves"></div>
+            <div class="sg-vinyl-center">
+              <img id="player-art-img" src="" alt="Album Art" style="display:none;" />
+              <div class="sg-vinyl-placeholder" id="player-art-placeholder">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff6422" stroke-width="2">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Track Info -->
+        <div class="sg-track-info">
+          <h3 class="sg-track-title" id="player-track-title">Audio Track</h3>
+          <p class="sg-track-artist" id="player-track-artist">StreamGrab Offline</p>
+        </div>
+
+        <!-- Seeker Progress Bar -->
+        <div class="sg-timeline-box">
+          <input type="range" class="sg-timeline-slider" id="player-seeker" min="0" max="100" value="0" step="0.1" />
+          <div class="sg-timeline-times">
+            <span id="player-current-time">00:00</span>
+            <span id="player-total-time">00:00</span>
+          </div>
+        </div>
+
+        <!-- Main Controls (Shuffle, Prev, Play/Pause, Next, Loop) -->
+        <div class="sg-music-controls-row">
+          <button type="button" class="sg-ctrl-btn" id="btn-player-shuffle" title="Shuffle Playlist">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-player-prev" title="Previous Track">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-play-pause-btn" id="btn-player-play-pause" title="Play / Pause">
+            <svg class="sg-icon-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg class="sg-icon-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-player-next" title="Next Track">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-player-repeat" title="Repeat Mode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="17 1 21 5 17 9"></polyline>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+              <polyline points="7 23 3 19 7 15"></polyline>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Player View (Active when playing MP4 video) - Custom Controller Matching Music Player Layout -->
+      <div class="sg-custom-video-deck" id="sg-custom-video-deck" style="display: none;">
+        <!-- Embedded Video Frame (Tap to play/pause) -->
+        <div class="sg-local-video-frame" id="sg-native-video-frame" title="Tap to Play / Pause">
+          <video id="sg-native-video" playsinline webkit-playsinline x5-playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: contain; background: #000; cursor: pointer;"></video>
+        </div>
+
+        <!-- Video Info (Title & Meta) -->
+        <div class="sg-track-info sg-video-track-info">
+          <h3 class="sg-track-title" id="player-video-title">Video Track</h3>
+          <p class="sg-track-artist" id="player-video-meta">MP4 &bull; Offline Media</p>
+        </div>
+
+        <!-- Seeker Progress Bar (Custom Seeker Matching Music Player) -->
+        <div class="sg-timeline-box">
+          <input type="range" class="sg-timeline-slider" id="video-seeker" min="0" max="100" value="0" step="0.1" />
+          <div class="sg-timeline-times">
+            <span id="video-current-time">00:00</span>
+            <span id="video-total-time">00:00</span>
+          </div>
+        </div>
+
+        <!-- Custom Video Controls Row (Rewind -10s, Prev, Play/Pause, Next, Forward +10s, Fullscreen Rotate) -->
+        <div class="sg-music-controls-row sg-video-deck-controls">
+          <button type="button" class="sg-ctrl-btn" id="btn-video-rewind-10" title="Rewind 10 Seconds">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M1 4v6h6"></path>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-video-prev" title="Previous Video">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-play-pause-btn" id="btn-video-play-pause" title="Play / Pause Video">
+            <svg class="sg-video-icon-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg class="sg-video-icon-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-video-next" title="Next Video">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-video-forward-10" title="Forward 10 Seconds">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-video-fullscreen-rotate" title="Fullscreen &amp; Rotate Orientation">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="sg-ctrl-btn" id="btn-video-pip" title="Float over other apps (Picture-in-Picture)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <rect x="12" y="9" width="8" height="6" rx="1" ry="1" fill="currentColor"></rect>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="sg-dialog-actions sg-player-footer">
+        <button type="button" class="sg-btn-ghost btn-sm" id="btn-local-player-save-offline" title="Save to Device Offline Storage (IndexedDB)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="sg-btn-svg">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span id="player-offline-btn-text">Save Offline</span>
+        </button>
+        <a id="btn-local-player-save" class="sg-btn-cta-orange btn-sm" download title="Save File to Device">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="sg-btn-svg">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Save to Device</span>
+        </a>
+        <button type="button" class="sg-btn-ghost btn-sm" id="btn-local-player-close">
+          <span>Minimize</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 3: STORAGE DIRECTORY & DEVICE STORAGE MANAGER MODAL
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="storage-modal" style="display: none;">
+    <div class="sg-dialog-card">
+      <div class="sg-dialog-header">
+        <div>
+          <h3 class="sg-dialog-title">Storage &amp; Device Manager</h3>
+          <span class="sg-dialog-sub" id="storage-modal-path">Device IndexedDB &amp; Auto-Purging Server Temp</span>
+        </div>
+        <button type="button" class="sg-btn-close" id="btn-close-storage">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <p class="sg-modal-desc">
+        StreamGrab operates standalone with zero sign-in. Files are saved directly to your phone/PC device or local offline browser storage. <strong>Zero files are stored in the application source repository.</strong>
+      </p>
+
+      <div class="sg-storage-summary" id="storage-stats-summary">
+        Loading storage status...
+      </div>
+
+      <div class="sg-storage-list" id="storage-files-list">
+        <!-- Populated from storage info -->
+      </div>
+
+      <div class="sg-dialog-actions">
+        <button type="button" class="sg-btn-ghost btn-sm text-danger" id="btn-purge-server-cache" title="Purge server temporary cache">
+          Purge Server Cache
+        </button>
+        <button type="button" class="sg-btn-ghost btn-sm" id="btn-refresh-storage">Refresh</button>
+        <button type="button" class="sg-btn-secondary btn-sm" id="btn-close-storage-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 4: YOUTUBE COOKIES AUTH MODAL
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="cookies-modal" style="display: none;">
+    <div class="sg-dialog-card">
+      <div class="sg-dialog-header">
+        <h3 class="sg-dialog-title">YouTube Authentication</h3>
+        <button type="button" class="sg-btn-close" id="btn-close-cookies">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <p class="sg-modal-desc">
+        YouTube challenges frequent anonymous video requests. Upload your browser <code>cookies.txt</code> to bypass bot checks permanently.
+      </p>
+
+      <div class="sg-cookie-status-box" id="cookies-modal-status-box">
+        <span class="sg-box-label">Status:</span>
+        <span class="sg-box-val" id="cookies-card-status">Checking...</span>
+      </div>
+
+      <div class="sg-field-group">
+        <label class="sg-field-label">Upload cookies.txt:</label>
+        <input type="file" id="cookies-file-input" class="sg-file-input" accept=".txt">
+      </div>
+
+      <div class="sg-field-group">
+        <label class="sg-field-label">Or paste cookie content:</label>
+        <textarea id="cookies-textarea" class="sg-textarea" rows="3" placeholder="# Netscape HTTP Cookie File..."></textarea>
+      </div>
+
+      <div class="sg-dialog-actions">
+        <button type="button" id="btn-save-cookies" class="sg-btn-cta-orange btn-sm">Save Cookies</button>
+        <button type="button" id="btn-delete-cookies" class="sg-btn-ghost btn-sm text-danger" style="display: none;">Remove</button>
+        <button type="button" id="btn-cancel-cookies" class="sg-btn-secondary btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 5: CUSTOM IN-APP ALERT MODAL
+       (Replaces browser window.alert popup)
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="sg-custom-alert-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="sg-alert-title">
+    <div class="sg-dialog-card sg-alert-card">
+      <div class="sg-dialog-header">
+        <div class="sg-alert-title-wrap">
+          <div class="sg-alert-badge" id="sg-alert-badge-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 class="sg-dialog-title" id="sg-alert-title">StreamGrab Notice</h3>
+        </div>
+        <button type="button" class="sg-btn-close" id="btn-custom-alert-close" title="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sg-alert-message-content" id="sg-alert-message">
+        <!-- Message populated dynamically -->
+      </div>
+
+      <div class="sg-dialog-actions" style="margin-top: 6px;">
+        <button type="button" class="sg-btn-cta-orange btn-sm" id="btn-custom-alert-ok">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 6: CUSTOM IN-APP CONFIRM MODAL
+       (Replaces browser window.confirm popup)
+       ======================================================== -->
+  <div class="sg-modal-backdrop" id="sg-custom-confirm-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="sg-confirm-title">
+    <div class="sg-dialog-card sg-alert-card">
+      <div class="sg-dialog-header">
+        <div class="sg-alert-title-wrap">
+          <div class="sg-alert-badge warning" id="sg-confirm-badge-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="sg-dialog-title" id="sg-confirm-title">Please Confirm</h3>
+        </div>
+        <button type="button" class="sg-btn-close" id="btn-custom-confirm-close" title="Cancel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sg-alert-message-content" id="sg-confirm-message">
+        <!-- Question populated dynamically -->
+      </div>
+
+      <div class="sg-dialog-actions" style="margin-top: 6px;">
+        <button type="button" class="sg-btn-secondary btn-sm" id="btn-custom-confirm-cancel">Cancel</button>
+        <button type="button" class="sg-btn-cta-orange btn-sm" id="btn-custom-confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom In-App Notification Toast Container -->
+  <div class="sg-toast-container" id="sg-toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/app.js?v=20260928_v8"></script>
+</body>
+</html>

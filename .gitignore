@@ -1,0 +1,19 @@
+# StreamGrab Git Ignore
+downloads/
+*.mp3
+*.mp4
+*.m4a
+*.webm
+*.part
+*.ytdl
+cookies.txt
+__pycache__/
+*.pyc
+.env
+*.log
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

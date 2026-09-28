@@ -1,0 +1,7 @@
+# StreamGrab Production Dependencies
+flask>=3.0.0
+flask-limiter>=4.0.0
+waitress>=3.0.0
+yt-dlp>=2024.0.0
+gunicorn>=22.0.0; sys_platform != "win32"
+requests>=2.31.0

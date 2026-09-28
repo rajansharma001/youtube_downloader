@@ -1,0 +1,20 @@
+services:
+  streamgrab:
+    build: .
+    container_name: streamgrab-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - STREAMGRAB_ENV=production
+      - STREAMGRAB_HOST=0.0.0.0
+      - STREAMGRAB_PORT=5000
+      - STREAMGRAB_SECRET_KEY=change-this-to-a-secure-random-key-in-production
+    volumes:
+      # Optional: persist cookies across container restarts
+      - ./cookies.txt:/app/cookies.txt:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
