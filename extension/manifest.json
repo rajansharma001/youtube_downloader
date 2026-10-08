@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "StreamGrab - YouTube Downloader (MP3 & Video)",
+  "version": "1.0.0",
+  "description": "Download YouTube videos and music as MP3 (320k) or MP4 (1080p, 720p) directly with one click inside YouTube.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "StreamGrab Downloader Settings"
+  },
+  "permissions": [
+    "storage",
+    "downloads",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "http://127.0.0.1:5000/*",
+    "http://localhost:5000/*",
+    "https://*.onrender.com/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

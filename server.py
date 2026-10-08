@@ -137,12 +137,31 @@ jobs = {}
 jobs_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Security Headers (applied to every response)
 # ---------------------------------------------------------------------------
+# Security Headers & CORS (applied to every response)
+# ---------------------------------------------------------------------------
+@app.before_request
+def handle_preflight():
+    """Handle CORS preflight OPTIONS requests from browser extensions & external origins."""
+    if request.method == 'OPTIONS' and request.path.startswith('/api/'):
+        response = make_response('', 204)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE, PUT'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+
+
 @app.after_request
 def add_security_headers(response):
-    """Apply comprehensive security headers to every HTTP response."""
+    """Apply comprehensive security headers and CORS to HTTP responses."""
     try:
+        # Enable CORS for all API endpoints so browser extensions on youtube.com can connect
+        if request.path.startswith('/api/'):
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE, PUT'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+
         # Cache control - prevent stale content for dynamic routes, but preserve caching on static/proxy assets
         if not request.path.startswith('/api/thumb/'):
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'

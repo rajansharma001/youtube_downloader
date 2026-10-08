@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamGrab Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="sg-popup-container">
+    <!-- Header -->
+    <header class="sg-header">
+      <div class="sg-brand">
+        <img src="icons/icon48.png" alt="Logo" class="sg-logo">
+        <div>
+          <h1 class="sg-title">StreamGrab</h1>
+          <span class="sg-subtitle">YouTube Downloader v1.0</span>
+        </div>
+      </div>
+      <div class="sg-health-badge" id="health-badge">
+        <span class="sg-dot" id="health-dot"></span>
+        <span id="health-text">Checking...</span>
+      </div>
+    </header>
+
+    <!-- Current Tab Quick Action (if on YouTube) -->
+    <section class="sg-card sg-current-tab-card" id="current-tab-section" style="display: none;">
+      <div class="sg-section-title">Current YouTube Video</div>
+      <div class="sg-video-name" id="current-video-title">Loading...</div>
+      <div class="sg-quick-row">
+        <button type="button" class="sg-btn-primary btn-sm" id="btn-quick-mp3">⚡ Download MP3 (320k)</button>
+        <button type="button" class="sg-btn-secondary btn-sm" id="btn-quick-mp4">🎬 Download MP4</button>
+      </div>
+    </section>
+
+    <!-- Server Settings -->
+    <section class="sg-card">
+      <div class="sg-section-title">Backend Server</div>
+      
+      <div class="sg-input-group">
+        <label for="server-select" class="sg-label">Server Endpoint</label>
+        <select id="server-select" class="sg-select">
+          <option value="http://127.0.0.1:5000">Localhost (http://127.0.0.1:5000) [Fastest]</option>
+          <option value="https://youtube-downloader-xs7u.onrender.com">Render Cloud (https://youtube-downloader-xs7u.onrender.com)</option>
+          <option value="custom">Custom Server URL...</option>
+        </select>
+      </div>
+
+      <div class="sg-input-group" id="custom-server-group" style="display: none;">
+        <label for="custom-server-input" class="sg-label">Custom Server URL</label>
+        <input type="text" id="custom-server-input" class="sg-input" placeholder="http://192.168.1.100:5000">
+      </div>
+
+      <div class="sg-btn-row">
+        <button type="button" class="sg-btn-secondary" id="btn-test-server">Test Connection</button>
+        <a href="http://127.0.0.1:5000" target="_blank" class="sg-link-btn" id="link-open-webapp">Open Web App ↗</a>
+      </div>
+    </section>
+
+    <!-- Preferences & MP3 Only Mode -->
+    <section class="sg-card">
+      <div class="sg-section-title">Download Preferences</div>
+
+      <!-- MP3 Only Mode Toggle -->
+      <div class="sg-toggle-row">
+        <div>
+          <div class="sg-toggle-label">🎵 MP3 Audio Only Mode</div>
+          <div class="sg-toggle-sub">Hide video options &amp; enable 1-click MP3 downloads on YouTube</div>
+        </div>
+        <label class="sg-switch">
+          <input type="checkbox" id="toggle-mp3-only">
+          <span class="sg-slider"></span>
+        </label>
+      </div>
+
+      <!-- Default Format (visible if not MP3 only) -->
+      <div class="sg-input-group" id="group-default-format">
+        <label for="default-format-select" class="sg-label">Default Format</label>
+        <select id="default-format-select" class="sg-select">
+          <option value="audio">MP3 (Audio)</option>
+          <option value="video">MP4 (Video)</option>
+        </select>
+      </div>
+
+      <!-- Default Audio Bitrate -->
+      <div class="sg-input-group">
+        <label for="default-audio-quality" class="sg-label">Default Audio Bitrate</label>
+        <select id="default-audio-quality" class="sg-select">
+          <option value="320">320 kbps (Extreme Quality)</option>
+          <option value="256">256 kbps (High Quality)</option>
+          <option value="192">192 kbps (Standard CD)</option>
+          <option value="128">128 kbps (Compact)</option>
+        </select>
+      </div>
+
+      <!-- Default Video Quality (visible if not MP3 only) -->
+      <div class="sg-input-group" id="group-video-quality">
+        <label for="default-video-quality" class="sg-label">Default Video Quality</label>
+        <select id="default-video-quality" class="sg-select">
+          <option value="1080">1080p (Full HD)</option>
+          <option value="720">720p (HD)</option>
+          <option value="480">480p (SD)</option>
+          <option value="360">360p (Data Saver)</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Save Button & Toast -->
+    <div class="sg-footer">
+      <button type="button" class="sg-btn-primary" id="btn-save-settings">Save Settings</button>
+      <div class="sg-save-toast" id="save-toast">Settings saved successfully!</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

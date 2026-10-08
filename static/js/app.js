@@ -527,6 +527,7 @@
   const btnCycleConnections = document.getElementById('btn-cycle-connections');
   const settingConnectionsVal = document.getElementById('setting-connections-val');
   const switchDarkMode = document.getElementById('switch-dark-mode');
+  const switchMp3Only = document.getElementById('switch-mp3-only');
   const settingsOfflineSize = document.getElementById('settings-offline-size');
   const btnViewOfflineLibrary = document.getElementById('btn-view-offline-library');
   const rowCookies = document.getElementById('row-cookies');
@@ -750,6 +751,39 @@
   });
 
   // -----------------------------------------------------------
+  // MP3 Audio Only Mode (Music Mode)
+  // -----------------------------------------------------------
+  let isMp3OnlyActive = localStorage.getItem('streamgrab_mp3_only') === 'true';
+
+  function applyMp3OnlyMode(enabled) {
+    isMp3OnlyActive = !!enabled;
+    localStorage.setItem('streamgrab_mp3_only', isMp3OnlyActive ? 'true' : 'false');
+    if (switchMp3Only) switchMp3Only.checked = isMp3OnlyActive;
+
+    if (isMp3OnlyActive) {
+      document.body.classList.add('sg-mp3-only-mode');
+      if (settingFormatVal) settingFormatVal.textContent = 'MP3';
+      formatIndex = FORMAT_OPTIONS.indexOf('MP3');
+      deckType = 'audio';
+      deckQuality = '320';
+    } else {
+      document.body.classList.remove('sg-mp3-only-mode');
+    }
+    updateDeckControlsUI();
+  }
+
+  if (switchMp3Only) {
+    switchMp3Only.checked = isMp3OnlyActive;
+    if (isMp3OnlyActive) {
+      document.body.classList.add('sg-mp3-only-mode');
+    }
+    switchMp3Only.addEventListener('change', () => {
+      applyMp3OnlyMode(switchMp3Only.checked);
+      showToast(switchMp3Only.checked ? '🎵 MP3 Audio Only Mode activated!' : 'Video & Audio formats restored.', 'info', 2500);
+    });
+  }
+
+  // -----------------------------------------------------------
   // Upper Online Video Player Deck & Bottom Download Options
   // -----------------------------------------------------------
   function loadPlayerSource(source) {
@@ -902,11 +936,16 @@
     loadPlayerSource('youtube');
 
     // Bottom Side: default quality from global setting
-    const globalQ = settingQualityVal ? settingQualityVal.textContent : 'Auto 1080p';
-    if (globalQ.includes('720')) deckQuality = '720';
-    else if (globalQ.includes('480')) deckQuality = '480';
-    else if (globalQ.includes('320')) { deckQuality = '320'; deckType = 'audio'; }
-    else deckQuality = '1080';
+    if (isMp3OnlyActive) {
+      deckType = 'audio';
+      deckQuality = '320';
+    } else {
+      const globalQ = settingQualityVal ? settingQualityVal.textContent : 'Auto 1080p';
+      if (globalQ.includes('720')) deckQuality = '720';
+      else if (globalQ.includes('480')) deckQuality = '480';
+      else if (globalQ.includes('320')) { deckQuality = '320'; deckType = 'audio'; }
+      else deckQuality = '1080';
+    }
 
     updateDeckControlsUI();
 
@@ -927,6 +966,22 @@
 
   function updateDeckControlsUI() {
     if (!deckQualityChips || !deckFormatToggle) return;
+
+    if (isMp3OnlyActive) {
+      deckType = 'audio';
+      if (!['320', '256', '192', '128'].includes(deckQuality)) {
+        deckQuality = '320';
+      }
+      const vidBtn = deckFormatToggle.querySelector('[data-val="video"]');
+      if (vidBtn) vidBtn.style.display = 'none';
+      deckQualityChips.querySelectorAll('[data-type="video"]').forEach(el => el.style.display = 'none');
+      deckQualityChips.querySelectorAll('[data-type="audio"]').forEach(el => el.style.display = '');
+    } else {
+      const vidBtn = deckFormatToggle.querySelector('[data-val="video"]');
+      if (vidBtn) vidBtn.style.display = '';
+      deckQualityChips.querySelectorAll('[data-type="video"]').forEach(el => el.style.display = '');
+      deckQualityChips.querySelectorAll('[data-type="audio"]').forEach(el => el.style.display = '');
+    }
 
     deckQualityChips.querySelectorAll('.sg-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.quality === deckQuality);
@@ -1327,20 +1382,21 @@
       if (!chip) return;
 
       deckQuality = chip.dataset.quality;
-      deckType = chip.dataset.type || (['320', '192'].includes(deckQuality) ? 'audio' : 'video');
+      deckType = isMp3OnlyActive ? 'audio' : (chip.dataset.type || (['320', '256', '192', '128'].includes(deckQuality) ? 'audio' : 'video'));
       updateDeckControlsUI();
     });
   }
 
   if (deckFormatToggle) {
     deckFormatToggle.addEventListener('click', (e) => {
+      if (isMp3OnlyActive) return; // Locked to audio when MP3 mode is active
       const btn = e.target.closest('.sg-toggle-btn');
       if (!btn) return;
 
       deckType = btn.dataset.val;
-      if (deckType === 'audio' && !['320', '192'].includes(deckQuality)) {
+      if (deckType === 'audio' && !['320', '256', '192', '128'].includes(deckQuality)) {
         deckQuality = '320';
-      } else if (deckType === 'video' && ['320', '192'].includes(deckQuality)) {
+      } else if (deckType === 'video' && ['320', '256', '192', '128'].includes(deckQuality)) {
         deckQuality = '1080';
       }
       updateDeckControlsUI();
@@ -1655,8 +1711,8 @@
         title: item.title || item.url,
         thumbnail: item.thumbnail || `https://i.ytimg.com/vi/${extractVideoId(item.url)}/hqdefault.jpg`,
         duration_str: item.duration_str || '00:00',
-        selectedQuality: item.selectedQuality || '1080',
-        selectedType: item.selectedType || 'video',
+        selectedQuality: item.selectedQuality || (isMp3OnlyActive ? '320' : '1080'),
+        selectedType: item.selectedType || (isMp3OnlyActive ? 'audio' : 'video'),
         checked: true
       });
     }
@@ -1703,10 +1759,17 @@
         <div class="sg-batch-info">
           <h4 class="sg-batch-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h4>
           <div class="sg-item-chips">
-            <button type="button" class="sg-mini-chip ${item.selectedQuality === '1080' ? 'active' : ''}" data-q="1080" data-t="video">1080p</button>
-            <button type="button" class="sg-mini-chip ${item.selectedQuality === '720' ? 'active' : ''}" data-q="720" data-t="video">720p</button>
-            <button type="button" class="sg-mini-chip ${item.selectedQuality === '320' ? 'active' : ''}" data-q="320" data-t="audio">MP3</button>
-            <button type="button" class="sg-mini-chip ${item.selectedType === 'video' && item.selectedQuality !== '1080' && item.selectedQuality !== '720' ? 'active' : ''}" data-q="480" data-t="video">MP4</button>
+            ${isMp3OnlyActive ? `
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '320' ? 'active' : ''}" data-q="320" data-t="audio">320k</button>
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '256' ? 'active' : ''}" data-q="256" data-t="audio">256k</button>
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '192' ? 'active' : ''}" data-q="192" data-t="audio">192k</button>
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '128' ? 'active' : ''}" data-q="128" data-t="audio">128k</button>
+            ` : `
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '1080' ? 'active' : ''}" data-q="1080" data-t="video">1080p</button>
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '720' ? 'active' : ''}" data-q="720" data-t="video">720p</button>
+              <button type="button" class="sg-mini-chip ${item.selectedQuality === '320' ? 'active' : ''}" data-q="320" data-t="audio">MP3</button>
+              <button type="button" class="sg-mini-chip ${item.selectedType === 'video' && item.selectedQuality !== '1080' && item.selectedQuality !== '720' ? 'active' : ''}" data-q="480" data-t="video">MP4</button>
+            `}
           </div>
         </div>
 
@@ -1769,8 +1832,8 @@
       title: `YouTube Video (${vid})`,
       thumbnail: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,
       duration_str: '00:00',
-      selectedQuality: settingQualityVal.textContent.includes('720') ? '720' : '1080',
-      selectedType: settingFormatVal.textContent === 'MP3' ? 'audio' : 'video'
+      selectedQuality: isMp3OnlyActive ? '320' : (settingQualityVal.textContent.includes('720') ? '720' : '1080'),
+      selectedType: isMp3OnlyActive ? 'audio' : (settingFormatVal.textContent === 'MP3' ? 'audio' : 'video')
     });
 
     batchSingleInput.value = '';

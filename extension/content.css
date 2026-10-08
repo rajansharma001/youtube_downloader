@@ -1,0 +1,453 @@
+/* ==========================================================================
+   StreamGrab - YouTube Native Integration Stylesheet
+   ========================================================================== */
+
+/* Injected Action Button in YouTube Action Bar */
+.sg-yt-btn-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+  vertical-align: middle;
+  z-index: 1000;
+  font-family: "Roboto", "Segoe UI", Arial, sans-serif !important;
+}
+
+.sg-yt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 100, 34, 0.4);
+  background: linear-gradient(135deg, #ff6422 0%, #ff4500 100%);
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 100, 34, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sg-yt-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ff7536 0%, #ff5214 100%);
+  box-shadow: 0 4px 14px rgba(255, 100, 34, 0.4);
+}
+
+.sg-yt-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(255, 100, 34, 0.2);
+}
+
+.sg-yt-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sg-yt-btn-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.sg-yt-btn-text {
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.sg-yt-btn-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  margin-left: 2px;
+}
+
+.sg-yt-btn-chevron {
+  display: flex;
+  align-items: center;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.sg-yt-btn-wrap.sg-open .sg-yt-btn-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu attached to button */
+.sg-yt-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  padding: 14px;
+  z-index: 100000;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  backdrop-filter: blur(16px);
+  color: #f8fafc;
+  animation: sgSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sg-yt-btn-wrap.sg-open .sg-yt-dropdown {
+  display: flex;
+}
+
+@keyframes sgSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header in dropdown */
+.sg-yt-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 10px;
+}
+
+.sg-yt-brand-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff6422;
+}
+
+.sg-yt-server-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sg-yt-server-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.sg-yt-server-dot.offline {
+  background: #ef4444;
+}
+
+/* Video mini title */
+.sg-yt-title-bar {
+  font-size: 12px;
+  font-weight: 500;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 0;
+}
+
+/* Format Switcher Tabs */
+.sg-yt-tabs {
+  display: flex;
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.sg-yt-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  transition: all 0.15s ease;
+}
+
+.sg-yt-tab.active {
+  background: #ff6422;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 100, 34, 0.35);
+}
+
+/* Quality Grid */
+.sg-yt-quality-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sg-yt-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.sg-yt-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.sg-yt-quality-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.sg-yt-quality-btn:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+.sg-yt-quality-btn.active {
+  background: rgba(255, 100, 34, 0.12);
+  border-color: #ff6422;
+  color: #ff6422;
+}
+
+.sg-yt-q-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sg-yt-q-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.sg-yt-quality-btn.active .sg-yt-q-desc {
+  color: #f87171;
+}
+
+/* Action CTA Button */
+.sg-yt-cta-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #ff6422 0%, #ff4500 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 100, 34, 0.35);
+  transition: all 0.2s ease;
+}
+
+.sg-yt-cta-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff7536 0%, #ff5214 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 100, 34, 0.45);
+}
+
+.sg-yt-cta-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Quick Instant MP3 1-Click Button */
+.sg-yt-instant-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 0;
+  border-radius: 8px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sg-yt-instant-btn:hover {
+  background: #334155;
+  color: #ffffff;
+  border-color: #ff6422;
+}
+
+/* Progress Box in Dropdown */
+.sg-yt-progress-box {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid #334155;
+}
+
+.sg-yt-progress-box.active {
+  display: flex;
+}
+
+.sg-yt-progress-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.sg-yt-status-label {
+  font-weight: 600;
+  color: #ff6422;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sg-yt-status-meta {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.sg-yt-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #0f172a;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.sg-yt-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff6422, #ff8c42);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.sg-yt-progress-fill.converting {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  animation: sgPulse 1s infinite alternate;
+}
+
+@keyframes sgPulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* Toast Notifications */
+.sg-yt-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  font-family: "Roboto", sans-serif;
+}
+
+.sg-yt-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-left: 4px solid #ff6422;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  font-size: 13px;
+  animation: sgToastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 360px;
+}
+
+.sg-yt-toast.success {
+  border-left-color: #10b981;
+}
+
+.sg-yt-toast.error {
+  border-left-color: #ef4444;
+}
+
+@keyframes sgToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Floating Fallback Pill (for Shorts or when actions bar isn't found) */
+.sg-yt-floating-pill {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #ff6422 0%, #ff4500 100%);
+  color: #ffffff !important;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(255, 100, 34, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sg-yt-floating-pill:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(255, 100, 34, 0.6);
+}

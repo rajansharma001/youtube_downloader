@@ -248,7 +248,9 @@
                   <button type="button" class="sg-chip" data-quality="480" data-type="video">480p</button>
                   <button type="button" class="sg-chip" data-quality="360" data-type="video">360p</button>
                   <button type="button" class="sg-chip" data-quality="320" data-type="audio">MP3 320k</button>
+                  <button type="button" class="sg-chip" data-quality="256" data-type="audio">MP3 256k</button>
                   <button type="button" class="sg-chip" data-quality="192" data-type="audio">MP3 192k</button>
+                  <button type="button" class="sg-chip" data-quality="128" data-type="audio">MP3 128k</button>
                 </div>
 
                 <!-- Format & Download Actions Row -->
@@ -673,6 +675,33 @@
               <button type="button" class="sg-pill-val-btn" id="btn-cycle-format">
                 <span id="setting-format-val">MP4</span>
               </button>
+            </div>
+          </div>
+
+          <!-- 3b. MP3 Audio Only Mode (Music Mode) -->
+          <div class="sg-setting-row" id="row-mp3-only">
+            <div class="sg-setting-left sg-with-icon">
+              <span class="sg-setting-icon-box" style="color: #ec4899; background: rgba(236, 72, 153, 0.12);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+              </span>
+              <div>
+                <span class="sg-setting-label" style="display:block;">MP3 Audio Only Mode</span>
+                <span class="sg-setting-value-sub" style="font-size:0.75rem; color:var(--text-muted); display:block;">Download music only (hides video options)</span>
+              </div>
+            </div>
+            <div class="sg-setting-right">
+              <label class="sg-switch-wrap">
+                <input type="checkbox" id="switch-mp3-only">
+                <span class="sg-switch-track">
+                  <span class="sg-switch-knob"></span>
+                  <span class="sg-switch-text sg-switch-on">ON</span>
+                  <span class="sg-switch-text sg-switch-off">OFF</span>
+                </span>
+              </label>
             </div>
           </div>
 
