@@ -19,10 +19,17 @@ Security features:
 
 import os
 import sys
+
+# Force Python UTF-8 mode globally (critical on Windows where console defaults to CP1252;
+# yt-dlp titles containing characters like ｜ U+FF5C crash ThreadPoolExecutor threads otherwise)
+os.environ.setdefault('PYTHONUTF8', '1')
+os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+
 import re
 import shutil
 import threading
 import time
+import traceback
 import uuid
 import urllib.parse
 import urllib.request
@@ -52,9 +59,9 @@ logger = logging.getLogger('streamgrab')
 # Force unbuffered output (safely ignored in serverless/Lambda environments where stdout is LambdaLogger)
 try:
     if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(line_buffering=True)
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
     if hasattr(sys.stderr, 'reconfigure'):
-        sys.stderr.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
 except Exception:
     pass
 
@@ -463,11 +470,16 @@ def cleanup_temp_cache(max_age_seconds=None):
 def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postprocessor_hook, ignore_cookies: bool = False):
     """Build secure yt-dlp download options with robust Innertube client fallbacks."""
     dl_opts = {
-        'outtmpl': os.path.join(DOWNLOADS_DIR, '%(title).100B.%(ext)s'),
-        'progress_hooks': [progress_hook],
-        'postprocessor_hooks': [postprocessor_hook],
+        'outtmpl': os.path.join(DOWNLOADS_DIR, '%(title).80s [%(id)s].%(ext)s'),
+        'windowsfilenames': True,
+        'continuedl': False,
+        'overwrites': True,
+        'progress_hooks': [progress_hook] if progress_hook else [],
+        'postprocessor_hooks': [postprocessor_hook] if postprocessor_hook else [],
         'quiet': True,
         'no_warnings': True,
+        'no_color': True,
+        'noprogress': True,
         'noplaylist': True,
         'socket_timeout': 30,
         'retries': 5,
@@ -475,7 +487,7 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
         'geo_bypass': False,
         'extractor_args': {
             'youtube': {
-                'player_client': ['visionos', 'web_embedded', 'tv_simply', 'mweb'],
+                'player_client': ['visionos', 'ios', 'android'],
             }
         }
     }
@@ -501,7 +513,7 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
         dl_opts['format'] = quality_map.get(quality, 'bestvideo+bestaudio/best')
         dl_opts['merge_output_format'] = 'mp4'
     else:
-        dl_opts['format'] = 'bestaudio/bestvideo+bestaudio/best'
+        dl_opts['format'] = 'bestaudio/best'
         safe_quality = str(quality) if quality in ('128', '192', '256', '320') else '192'
         dl_opts['postprocessors'] = [{
             'key': 'FFmpegExtractAudio',
@@ -514,9 +526,11 @@ def build_yt_dlp_options(media_type: str, quality: str, progress_hook, postproce
 
 def process_download(job_id: str):
     """Background worker for downloading and converting media."""
+    logger.info("process_download STARTED for job %s (thread=%s)", job_id, threading.current_thread().name)
     with jobs_lock:
         job = jobs.get(job_id)
         if not job:
+            logger.warning("process_download: job %s not found in jobs dict", job_id)
             return
 
     clean_url = clean_youtube_url(job['url'])
@@ -598,7 +612,7 @@ def process_download(job_id: str):
             try:
                 # Tier 2: Ignore cookies, force clean visionos & web_embedded
                 retry_opts = build_yt_dlp_options(media_type, quality, ydl_progress_hook, ydl_postprocessor_hook, ignore_cookies=True)
-                retry_opts['extractor_args']['youtube']['player_client'] = ['visionos', 'web_embedded', 'tv_simply', 'mweb']
+                retry_opts['extractor_args']['youtube']['player_client'] = ['visionos', 'ios']
                 with yt_dlp.YoutubeDL(retry_opts) as ydl:
                     res_info = ydl.extract_info(clean_url, download=True)
             except Exception as second_attempt_err:
@@ -667,6 +681,12 @@ def process_download(job_id: str):
 
     except Exception as e:
         logger.error("Job %s failed: %s", job_id, str(e))
+        traceback.print_exc()
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass
         err_msg = format_user_error(str(e))
         with jobs_lock:
             job['status'] = 'failed'
@@ -863,8 +883,12 @@ def download():
         return jsonify({"success": False, "error": "Invalid JSON payload."}), 400
 
     raw_urls = data.get('urls')
+    if not raw_urls:
+        single_url = data.get('url')
+        if single_url and isinstance(single_url, str):
+            raw_urls = [single_url]
     if not raw_urls or not isinstance(raw_urls, list):
-        return jsonify({"success": False, "error": "URLs must be a list of strings."}), 400
+        return jsonify({"success": False, "error": "URLs must be a list of strings or a url string."}), 400
 
     # Limit total input size
     if len(raw_urls) > 100:
@@ -924,7 +948,24 @@ def download():
                     del jobs[old_k]
             jobs[job_id] = job_record
 
-        executor.submit(process_download, job_id)
+        future = executor.submit(process_download, job_id)
+
+        def _log_thread_failure(f, jid=job_id):
+            """Log unhandled exceptions from background download threads."""
+            try:
+                exc = f.exception(timeout=0)
+                if exc:
+                    logger.error("Download thread for job %s raised: %s", jid, exc)
+                    traceback.print_exception(type(exc), exc, exc.__traceback__)
+                    with jobs_lock:
+                        j = jobs.get(jid)
+                        if j and j['status'] not in ('completed', 'failed'):
+                            j['status'] = 'failed'
+                            j['error'] = format_user_error(str(exc))
+            except Exception:
+                pass
+
+        future.add_done_callback(_log_thread_failure)
         created_jobs.append({
             "job_id": job_id,
             "url": url,
@@ -933,7 +974,12 @@ def download():
             "thumbnail": instant_thumb or ""
         })
 
-    return jsonify({"success": True, "jobs": created_jobs})
+    job_ids = [j["job_id"] for j in created_jobs]
+    return jsonify({
+        "success": True,
+        "jobs": created_jobs,
+        "job_ids": job_ids
+    })
 
 
 @app.route('/api/status/<job_id>', methods=['GET'])
@@ -948,7 +994,7 @@ def get_status(job_id):
         if not job:
             return jsonify({"success": False, "error": "Job not found."}), 404
 
-        return jsonify({
+        job_data = {
             "job_id": job["job_id"],
             "url": job["url"],
             "media_type": job.get("media_type", "audio"),
@@ -963,7 +1009,11 @@ def get_status(job_id):
             "eta": job["eta"],
             "filename": job["filename"],
             "error": job["error"]
-        })
+        }
+        res_dict = dict(job_data)
+        res_dict["job"] = job_data
+        res_dict["success"] = True
+        return jsonify(res_dict)
 
 
 @app.route('/api/jobs', methods=['GET'])

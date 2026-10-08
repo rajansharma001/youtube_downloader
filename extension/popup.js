@@ -194,7 +194,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const jobId = res.data.job_ids && res.data.job_ids[0];
+      let jobId = null;
+      if (res && res.data) {
+        if (Array.isArray(res.data.jobs) && res.data.jobs.length > 0) {
+          jobId = res.data.jobs[0].job_id || res.data.jobs[0].id;
+        } else if (Array.isArray(res.data.job_ids) && res.data.job_ids.length > 0) {
+          jobId = res.data.job_ids[0];
+        } else if (res.data.job_id) {
+          jobId = res.data.job_id;
+        }
+      }
+
       alert(`Download started for ${format.toUpperCase()} (${quality})!\nThe file will download automatically once processing completes.`);
 
       if (jobId) {
@@ -205,17 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
             endpoint: `/api/status/${jobId}`,
             method: 'GET'
           }, (sRes) => {
-            if (sRes && sRes.success && sRes.data && sRes.data.job) {
-              const job = sRes.data.job;
-              if (job.status === 'completed') {
+            if (sRes && sRes.success && sRes.data) {
+              const job = sRes.data.job || sRes.data;
+              if (job && job.status === 'completed') {
                 clearInterval(pollTimer);
-                const fileUrl = `${sUrl}/api/file/${encodeURIComponent(job.filename)}`;
+                const filename = job.filename || 'streamgrab_media.mp3';
+                const fileUrl = `${sUrl}/api/file/${encodeURIComponent(filename)}`;
                 chrome.runtime.sendMessage({
                   action: 'downloadFile',
                   url: fileUrl,
-                  filename: job.filename
+                  filename: filename
                 });
-              } else if (job.status === 'failed' || job.status === 'error') {
+              } else if (job && (job.status === 'failed' || job.status === 'error')) {
                 clearInterval(pollTimer);
               }
             }

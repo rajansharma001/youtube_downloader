@@ -630,8 +630,21 @@
         throw new Error(errorMsg);
       }
 
-      const jobId = res.data.job_ids && res.data.job_ids[0];
+      let jobId = null;
+      if (res && res.data) {
+        if (Array.isArray(res.data.jobs) && res.data.jobs.length > 0) {
+          jobId = res.data.jobs[0].job_id || res.data.jobs[0].id;
+        } else if (Array.isArray(res.data.job_ids) && res.data.job_ids.length > 0) {
+          jobId = res.data.job_ids[0];
+        } else if (res.data.job_id) {
+          jobId = res.data.job_id;
+        } else if (res.data.id) {
+          jobId = res.data.id;
+        }
+      }
+
       if (!jobId) {
+        console.error('[StreamGrab] /api/download response structure:', res);
         throw new Error('Server did not return a valid download job ID');
       }
 
@@ -655,39 +668,48 @@
 
     statusPollTimer = setInterval(async () => {
       const res = await callBackend(`/api/status/${jobId}`);
-      if (!res || !res.success || !res.data || !res.data.job) {
+      if (!res || !res.success || !res.data) {
         return;
       }
 
-      const job = res.data.job;
+      // Supports both direct object or nested in .job
+      const job = res.data.job || res.data;
+      if (!job || !job.status) return;
 
-      if (job.status === 'extracting') {
+      const status = job.status;
+      const progress = typeof job.progress === 'number' ? job.progress : (typeof job.percent === 'number' ? job.percent : 0);
+
+      if (status === 'waiting') {
+        if (label) label.textContent = '⏳ Queued...';
+        updateDropdownProgress('Queued on server...', 5);
+      } else if (status === 'fetching' || status === 'extracting') {
         if (label) label.textContent = '🔍 Analyzing...';
         updateDropdownProgress('Analyzing YouTube video streams...', 15);
-      } else if (job.status === 'downloading') {
-        const p = Math.max(15, Math.min(92, Math.round(job.percent || 0)));
+      } else if (status === 'downloading') {
+        const p = Math.max(10, Math.min(95, Math.round(progress)));
         if (label) label.textContent = `⬇ ${p}%`;
         const speed = job.speed ? ` • ${job.speed}` : '';
         const eta = job.eta ? ` • ETA ${job.eta}` : '';
         updateDropdownProgress(`Downloading: ${p}%${speed}${eta}`, p);
-      } else if (job.status === 'converting') {
+      } else if (status === 'converting') {
         if (label) label.textContent = '🎵 Converting...';
-        updateDropdownProgress('Converting audio format with FFmpeg...', 95);
-      } else if (job.status === 'completed') {
+        updateDropdownProgress('Converting audio format with FFmpeg...', 96);
+      } else if (status === 'completed') {
         clearInterval(statusPollTimer);
         statusPollTimer = null;
 
         if (label) label.textContent = '✅ Saved!';
         updateDropdownProgress('Download complete! Saving file...', 100);
 
-        // Trigger native browser download via background service worker
-        const fileUrl = `${currentServerUrl}/api/file/${encodeURIComponent(job.filename)}`;
+        const filename = job.filename || `${currentVideoId || 'media'}.mp3`;
+        const fileUrl = `${currentServerUrl}/api/file/${encodeURIComponent(filename)}`;
+
         chrome.runtime.sendMessage({
           action: 'downloadFile',
           url: fileUrl,
-          filename: job.filename
+          filename: filename
         }, (dRes) => {
-          showToast(`🎉 ${job.filename} saved to Downloads folder!`, 'success', 5000);
+          showToast(`🎉 ${filename} saved to Downloads folder!`, 'success', 5000);
         });
 
         setTimeout(() => {
@@ -696,7 +718,7 @@
           resetDropdownProgress();
         }, 3500);
 
-      } else if (job.status === 'failed' || job.status === 'error') {
+      } else if (status === 'failed' || status === 'error') {
         clearInterval(statusPollTimer);
         statusPollTimer = null;
         if (mainBtn) mainBtn.disabled = false;
