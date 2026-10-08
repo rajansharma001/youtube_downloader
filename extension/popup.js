@@ -108,20 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
   async function testServer(url) {
     healthDot.className = 'sg-dot';
     healthText.textContent = 'Pinging...';
-    try {
-      const res = await fetch(`${url}/api/health`, { mode: 'cors' });
-      if (res.ok) {
-        const data = await res.json();
+
+    chrome.runtime.sendMessage({
+      action: 'apiFetch',
+      serverUrl: url,
+      endpoint: '/api/health',
+      method: 'GET'
+    }, (res) => {
+      if (res && res.success && res.data && res.data.status === 'ok') {
         healthDot.className = 'sg-dot online';
         healthText.textContent = 'Online';
       } else {
         healthDot.className = 'sg-dot offline';
-        healthText.textContent = `HTTP ${res.status}`;
+        healthText.textContent = 'Offline';
       }
-    } catch (e) {
-      healthDot.className = 'sg-dot offline';
-      healthText.textContent = 'Offline';
-    }
+    });
   }
 
   // 4. Save Settings
@@ -173,28 +174,54 @@ document.addEventListener('DOMContentLoaded', () => {
     btnQuickMp3.disabled = true;
     btnQuickMp4.disabled = true;
 
-    try {
-      const res = await fetch(`${sUrl}/api/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'cors',
-        body: JSON.stringify({
-          urls: [activeVideoUrl],
-          type: format,
-          quality: quality
-        })
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed');
-
-      alert(`Download started for ${format.toUpperCase()} (${quality})! Check downloads.`);
-    } catch (e) {
-      alert(`Error starting download: ${e.message}. Ensure server is running at ${sUrl}`);
-    } finally {
+    chrome.runtime.sendMessage({
+      action: 'apiFetch',
+      serverUrl: sUrl,
+      endpoint: '/api/download',
+      method: 'POST',
+      body: {
+        urls: [activeVideoUrl],
+        type: format,
+        quality: quality
+      }
+    }, (res) => {
       btnQuickMp3.disabled = false;
       btnQuickMp4.disabled = false;
-    }
+
+      if (!res || !res.success || !res.data || !res.data.success) {
+        const err = (res && res.data && res.data.error) || (res && res.error) || 'Failed to connect to server';
+        alert(`Download Error: ${err}\nMake sure backend server is running at ${sUrl}`);
+        return;
+      }
+
+      const jobId = res.data.job_ids && res.data.job_ids[0];
+      alert(`Download started for ${format.toUpperCase()} (${quality})!\nThe file will download automatically once processing completes.`);
+
+      if (jobId) {
+        const pollTimer = setInterval(() => {
+          chrome.runtime.sendMessage({
+            action: 'apiFetch',
+            serverUrl: sUrl,
+            endpoint: `/api/status/${jobId}`,
+            method: 'GET'
+          }, (sRes) => {
+            if (sRes && sRes.success && sRes.data && sRes.data.job) {
+              const job = sRes.data.job;
+              if (job.status === 'completed') {
+                clearInterval(pollTimer);
+                const fileUrl = `${sUrl}/api/file/${encodeURIComponent(job.filename)}`;
+                chrome.runtime.sendMessage({
+                  action: 'downloadFile',
+                  url: fileUrl,
+                  filename: job.filename
+                });
+              } else if (job.status === 'failed' || job.status === 'error') {
+                clearInterval(pollTimer);
+              }
+            }
+          });
+        }, 1000);
+      }
+    });
   }
 });
